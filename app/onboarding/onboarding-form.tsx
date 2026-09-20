@@ -65,7 +65,7 @@ export default function OnboardingForm({ userId }: Props) {
           placeholder="Example: ModernTap Coffee"
           autoComplete="organization"
           maxLength={100}
-          className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500"
+          className="mt-2 w-full rounded-xl border border-[#dbe4ea] px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
         />
       </div>
 
@@ -78,7 +78,7 @@ export default function OnboardingForm({ userId }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-[#17324d] px-4 py-3 font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
           ? "Creating business..."

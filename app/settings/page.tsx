@@ -7,14 +7,14 @@ export default async function SettingsPage() {
   const { user, business } = await requireSubscription();
 
   return (
-    <AppShell>
-      <div className="mx-auto max-w-4xl">
+    <AppShell businessName={business.name}>
+      <div className="mx-auto max-w-[1280px]">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Account
+          <p className="mt-kicker">
+            Settings
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17324d]">
             Settings
           </h1>
 
@@ -24,8 +24,8 @@ export default async function SettingsPage() {
         </div>
 
         <div className="mt-8 grid gap-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <section className="mt-panel p-6">
+            <h2 className="text-lg font-bold text-[#17324d]">
               Business
             </h2>
 
@@ -39,8 +39,8 @@ export default async function SettingsPage() {
 />
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <section className="mt-panel p-6">
+            <h2 className="text-lg font-bold text-[#17324d]">
               Account
             </h2>
 

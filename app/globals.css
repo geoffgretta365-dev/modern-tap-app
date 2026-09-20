@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -30,32 +31,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
+
 }
 
 @layer base {
@@ -63,7 +39,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #f8fcfd;
+    color: #0f172a;
   }
 }
 
@@ -91,3 +68,198 @@ textarea::placeholder {
   color: #6b7280;
   opacity: 1;
 }
+
+/* ModernTap customer interface patterns. Scoped to the app shell. */
+:root {
+  --mt-bg: #f8fcfd;
+  --mt-surface: #ffffff;
+  --mt-surface-soft: #f3f7f9;
+  --mt-border: #dbe4ea;
+  --mt-text: #0f172a;
+  --mt-muted: #64748b;
+  --mt-accent: #16c7c0;
+  --mt-accent-dark: #0f8f8a;
+  --mt-accent-soft: #dffaf8;
+  --mt-navy: #17324d;
+}
+
+@layer components {
+  .mt-app-background,
+  .mt-main-content,
+  .mt-page {
+    background-color: var(--mt-bg);
+    color: var(--mt-text);
+  }
+
+  .mt-main-content {
+    min-height: calc(100vh - 4rem);
+  }
+
+  .mt-card {
+    @apply rounded-[20px] border shadow-sm;
+    background-color: var(--mt-surface);
+    border-color: var(--mt-border);
+    color: var(--mt-text);
+  }
+
+  .mt-hover-card {
+    @apply transition duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-0.5;
+  }
+
+  .mt-kicker {
+    @apply text-xs font-bold uppercase tracking-[0.2em];
+    color: var(--mt-accent-dark);
+  }
+
+  .mt-primary-action {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    background-color: var(--mt-navy);
+  }
+
+  .mt-primary-action:hover { background-color: #224665; }
+  .mt-primary-action:focus-visible { --tw-ring-color: var(--mt-accent); }
+
+  .mt-secondary-action {
+    @apply inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    background-color: var(--mt-surface);
+    border-color: var(--mt-border);
+    color: var(--mt-navy);
+  }
+
+  .mt-secondary-action:hover {
+    border-color: var(--mt-accent);
+    background-color: var(--mt-accent-soft);
+  }
+  .mt-secondary-action:focus-visible { --tw-ring-color: var(--mt-accent); }
+}
+
+/* Explicit shell surfaces keep their contrast independent of utility ordering. */
+.mt-shell-sidebar {
+  background-color: #17324d;
+  border-color: #31506a;
+  color: #dbe4ea;
+}
+.mt-shell-canvas,
+.mt-main-content {
+  background-color: #f8fcfd;
+  color: #0f172a;
+}
+.mt-shell-header {
+  background-color: rgba(255, 255, 255, 0.97);
+  border-color: #dbe4ea;
+  box-shadow: 0 1px 3px rgba(23, 50, 77, 0.06);
+}
+.mt-shell-nav-inactive { color: #dbe4ea; }
+.mt-shell-nav-inactive:hover { background-color: rgba(255, 255, 255, 0.1); color: #fff; }
+.mt-shell-nav-active {
+  background-color: rgba(22, 199, 192, 0.2);
+  color: #9af4ee;
+  box-shadow: inset 0 0 0 1px rgba(22, 199, 192, 0.42);
+}
+.mt-shell-account {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.mt-card {
+  background-color: #fff;
+  border: 1px solid #dbe4ea;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(23, 50, 77, 0.06);
+  color: #0f172a;
+}
+/* Shared ModernTap presentation patterns for customer pages. */
+.mt-panel {
+  background-color: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(23, 50, 77, 0.06);
+  color: var(--mt-text);
+}
+.mt-stat-card {
+  background-color: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(23, 50, 77, 0.06);
+  color: var(--mt-text);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+@media (hover: hover) {
+  .mt-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 22px rgba(23, 50, 77, 0.1);
+  }
+}
+.mt-section-heading { color: var(--mt-navy); font-weight: 700; }
+.mt-muted { color: var(--mt-muted); }
+.mt-segmented {
+  background-color: var(--mt-surface);
+  border: 1px solid var(--mt-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(23, 50, 77, 0.05);
+}
+.mt-segmented-active { background-color: var(--mt-navy); color: #fff; }
+.mt-segmented-inactive { color: var(--mt-text); }
+.mt-segmented-inactive:hover { background-color: var(--mt-surface-soft); }
+.mt-engagement-heading {
+  background-color: var(--mt-accent-soft);
+  border: 1px solid rgba(22, 199, 192, 0.2);
+  border-radius: 14px;
+}
+
+/* Customer forms and controls share the Analytics palette. */
+.mt-main-content input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
+.mt-main-content select,
+.mt-main-content textarea,
+.mt-auth input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
+.mt-onboarding input:not([type="checkbox"]):not([type="color"]):not([type="file"]) {
+  border-color: var(--mt-border);
+  border-radius: 12px;
+  background-color: #fff;
+  color: var(--mt-text);
+}
+.mt-main-content input:focus-visible,
+.mt-main-content select:focus-visible,
+.mt-main-content textarea:focus-visible,
+.mt-auth input:focus-visible,
+.mt-onboarding input:focus-visible {
+  outline: 2px solid var(--mt-accent);
+  outline-offset: 2px;
+  border-color: var(--mt-accent);
+}
+.mt-main-content button[class*="bg-slate-950"],
+.mt-main-content button[class*="bg-slate-900"],
+.mt-main-content button[class*="bg-black"],
+.mt-main-content a[class*="bg-slate-950"],
+.mt-main-content a[class*="bg-slate-900"] {
+  background-color: var(--mt-navy);
+  color: #fff;
+  border-radius: 12px;
+}
+.mt-main-content button[class*="bg-slate-950"]:hover,
+.mt-main-content button[class*="bg-slate-900"]:hover,
+.mt-main-content button[class*="bg-black"]:hover,
+.mt-main-content a[class*="bg-slate-950"]:hover,
+.mt-main-content a[class*="bg-slate-900"]:hover { background-color: #244560; }
+.mt-main-content button:focus-visible,
+.mt-main-content a:focus-visible,
+.mt-auth button:focus-visible,
+.mt-auth a:focus-visible,
+.mt-onboarding button:focus-visible {
+  outline: 2px solid var(--mt-accent);
+  outline-offset: 2px;
+}
+.mt-auth,
+.mt-onboarding { background-color: var(--mt-bg); color: var(--mt-text); }
+.mt-auth .bg-card { background-color: #fff; border-color: var(--mt-border); border-radius: 20px; box-shadow: 0 4px 16px rgba(23, 50, 77, 0.06); }
+.mt-auth button[type="submit"], .mt-onboarding button[type="submit"] { background-color: var(--mt-navy); color: #fff; border-radius: 12px; }
+.mt-auth button[type="submit"]:hover, .mt-onboarding button[type="submit"]:hover { background-color: #244560; }
+.mt-badge-teal { background-color: var(--mt-accent-soft); color: var(--mt-accent-dark); border: 1px solid rgba(22, 199, 192, 0.3); }
+.mt-badge-neutral { background-color: var(--mt-surface-soft); color: var(--mt-navy); border: 1px solid var(--mt-border); }
+.mt-main-content input:focus-visible,
+.mt-main-content select:focus-visible,
+.mt-main-content textarea:focus-visible,
+.mt-auth input:focus-visible,
+.mt-onboarding input:focus-visible { --tw-ring-color: var(--mt-accent); }
+.mt-main-content button:disabled,
+.mt-auth button:disabled,
+.mt-onboarding button:disabled { cursor: not-allowed; }

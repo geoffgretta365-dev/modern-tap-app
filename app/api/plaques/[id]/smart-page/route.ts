@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { appearanceContrastError, isButtonRadius, isButtonStyle, isHexColor, isThemePreset } from "@/lib/smart-page-appearance";
 
 const bad = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
 const failed = () => bad("Could not save Smart Page changes.", 500);
@@ -68,6 +69,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   if (plaque.mode !== "smart_page") return bad("Switch to Smart Page mode first.", 409);
   if (!page) return bad("Smart Page is not ready. Switch modes and try again.", 409);
+
+  if (input.action === "save_appearance") {
+    const { theme_preset, background_color, text_color, button_color, button_text_color, button_style, button_radius } = input;
+    if (!isThemePreset(theme_preset) ||
+        ![background_color, text_color, button_color, button_text_color].every((value) => value === null || isHexColor(value)) ||
+        !(button_style === null || isButtonStyle(button_style)) ||
+        !(button_radius === null || isButtonRadius(button_radius))) {
+      return bad("Select valid appearance options and six-digit hex colors.");
+    }
+    const appearance = { theme_preset, background_color: background_color as string | null,
+      text_color: text_color as string | null, button_color: button_color as string | null,
+      button_text_color: button_text_color as string | null,
+      button_style: button_style as "solid" | "outline" | "soft" | null,
+      button_radius: button_radius as "rounded" | "pill" | "square" | null };
+    const contrastError = appearanceContrastError(appearance);
+    if (contrastError) return bad(contrastError);
+    const { data, error } = await supabase.from("smart_pages")
+      .update({ ...appearance, updated_at: new Date().toISOString() })
+      .eq("id", page.id).eq("plaque_id", plaque.id).select("id").maybeSingle();
+    return error || !data ? failed() : NextResponse.json({ ok: true });
+  }
 
   if (input.action === "save_page") {
     const heading = textField(input.heading, 100);

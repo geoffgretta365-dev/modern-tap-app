@@ -3,6 +3,7 @@ export const instant = false;
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import OnboardingForm from "./onboarding-form";
+import ModernTapBrand from "@/components/modern-tap-brand";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
@@ -26,12 +27,10 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12">
+    <main className="mt-onboarding min-h-screen px-6 py-12">
       <div className="mx-auto max-w-xl">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            ModernTap
-          </p>
+        <div className="mt-panel p-6 sm:p-8">
+          <ModernTapBrand href="/" />
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
             Set up your business

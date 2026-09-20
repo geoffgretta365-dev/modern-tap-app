@@ -1,13 +1,12 @@
 import Link from "next/link";
+import ModernTapBrand from "@/components/modern-tap-brand";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <nav className="border-b border-white/10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-          <Link href="/" className="text-xl font-bold tracking-tight">
-            ModernTap
-          </Link>
+          <ModernTapBrand href="/" compact />
 
           <div className="flex items-center gap-3">
             <Link

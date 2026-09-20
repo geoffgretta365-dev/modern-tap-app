@@ -11,6 +11,7 @@ export default function NewPlaqueForm({
 }) {
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
+  const [purpose, setPurpose] = useState<"general" | "review">("general");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -57,6 +58,7 @@ export default function NewPlaqueForm({
       code: generateCode(),
       destination_url: cleanUrl,
       active: true,
+      purpose,
     });
 
     if (error) {
@@ -73,7 +75,7 @@ export default function NewPlaqueForm({
   return (
     <form onSubmit={createPlaque} className="mt-8 space-y-5">
       <div>
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-slate-700">
           Plaque Name
         </label>
 
@@ -81,12 +83,12 @@ export default function NewPlaqueForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Front Counter Review Plaque"
-          className="mt-2 w-full rounded-lg border px-4 py-3 text-gray-900 outline-none focus:ring-2 focus:ring-black"
+          className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-[#16c7c0]"
         />
       </div>
 
       <div>
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-slate-700">
           Destination URL
         </label>
 
@@ -94,14 +96,24 @@ export default function NewPlaqueForm({
           value={destination}
           onChange={(e) => setDestination(e.target.value)}
           placeholder="https://..."
-          className="mt-2 w-full rounded-lg border px-4 py-3 text-gray-900 outline-none focus:ring-2 focus:ring-black"
+          className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-[#16c7c0]"
         />
+      </div>
+
+      <div>
+        <label htmlFor="plaque-purpose" className="text-sm font-medium text-slate-700">Plaque Purpose</label>
+        <select id="plaque-purpose" value={purpose} onChange={(event) => setPurpose(event.target.value as "general" | "review")}
+          className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-4 py-3 text-slate-900">
+          <option value="general">General</option>
+          <option value="review">Review Card</option>
+        </select>
+        {purpose === "review" && <p className="mt-2 text-sm text-slate-600">Review Card taps are tracked as review-page visits, not completed reviews.</p>}
       </div>
 
       <button
         type="submit"
         disabled={saving}
-        className="w-full rounded-lg bg-black px-5 py-3 font-medium text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-[#17324d] px-5 py-3 font-medium text-white disabled:opacity-50"
       >
         {saving ? "Creating..." : "Create Plaque"}
       </button>

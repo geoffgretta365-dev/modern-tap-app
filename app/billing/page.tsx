@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import AppShell from "@/app/components/app-shell";
+import { formatEasternDate } from "@/lib/format-eastern-time";
 import CheckoutButton from "./checkout-button";
 import { isTerminalSubscriptionStatus } from "@/lib/stripe/subscription-status";
 
@@ -42,7 +43,7 @@ export default async function BillingPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-7xl">
-          <h1 className="text-3xl font-bold text-slate-950">
+          <h1 className="text-3xl font-bold text-[#17324d]">
             Billing
           </h1>
           <p className="mt-2 text-slate-500">
@@ -65,11 +66,11 @@ export default async function BillingPage() {
       <div className="mx-auto max-w-7xl">
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <p className="mt-kicker">
             Subscription
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17324d] sm:text-4xl">
             Billing
           </h1>
 
@@ -80,16 +81,16 @@ export default async function BillingPage() {
 
         <div className="mt-8 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mt-panel p-6">
 
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <p className="mt-kicker">
                   Current Plan
                 </p>
 
-                <h2 className="mt-3 text-2xl font-bold text-slate-950">
+                <h2 className="mt-3 text-2xl font-bold text-[#17324d]">
                   ModernTap
                 </h2>
 
@@ -101,13 +102,13 @@ export default async function BillingPage() {
               <span
   className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${
     subscription?.status === "active"
-      ? "bg-emerald-50 text-emerald-700"
+      ? "mt-badge-teal"
       : "bg-amber-50 text-amber-700"
   }`}
 >
   {subscription?.status === "active"
     ? subscription?.cancel_at
-      ? `Active — Cancels ${new Date(subscription.cancel_at).toLocaleDateString("en-US", {
+      ? `Active — Cancels ${formatEasternDate(subscription.cancel_at, {
           month: "short",
           day: "numeric",
           year: "numeric",
@@ -122,7 +123,7 @@ export default async function BillingPage() {
 
             <div className="mt-8 border-t border-slate-100 pt-6">
 
-              <p className="text-sm font-semibold text-slate-950">
+              <p className="text-sm font-semibold text-[#17324d]">
                 Included with ModernTap
               </p>
 
@@ -141,9 +142,9 @@ export default async function BillingPage() {
 
           </section>
 
-          <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm">
+          <section className="mt-panel p-6">
 
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mt-kicker">
               Billing Status
             </p>
 
@@ -151,19 +152,19 @@ export default async function BillingPage() {
               {isActiveSubscription ? "Billing is active." : "Stripe setup is next."}
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-slate-300">
+            <p className="mt-3 text-sm leading-6 text-slate-600">
               {isActiveSubscription
                 ? "Your account is connected to Stripe. Payments, invoices, and subscription management are handled securely through Stripe."
                 : "We'll connect this account to Stripe so subscriptions, payments, invoices, and cancellations can be managed automatically."}
             </p>
 
-            <div className="mt-8 rounded-xl border border-slate-700 bg-slate-900 p-4">
+            <div className="mt-8 rounded-xl border border-[#dbe4ea] bg-[#f3f7f9] p-4">
 
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 Account
               </p>
 
-              <p className="mt-2 font-semibold text-white">
+              <p className="mt-2 font-semibold text-[#17324d]">
                 {business.name}
               </p>
 
@@ -173,9 +174,9 @@ export default async function BillingPage() {
 
         </div>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 mt-panel p-6">
 
-          <h2 className="text-lg font-bold text-slate-950">
+          <h2 className="text-lg font-bold text-[#17324d]">
             Payment & Subscription
           </h2>
 
@@ -197,7 +198,7 @@ function Feature({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-3">
 
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-600">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#dffaf8] text-xs font-bold text-[#0f8f8a]">
         ✓
       </div>
 

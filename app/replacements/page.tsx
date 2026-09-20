@@ -1,6 +1,7 @@
 export const instant = false;
 
 import AppShell from "@/app/components/app-shell";
+import { formatEasternDate } from "@/lib/format-eastern-time";
 import { requireSubscription } from "@/lib/require-subscription";
 import ReplacementForm from "./replacement-form";
 
@@ -23,13 +24,13 @@ export default async function ReplacementsPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-5xl space-y-8">
+      <div className="mx-auto max-w-[1280px] space-y-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-kicker">
             Plaque Protection
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17324d]">
             Replacements
           </h1>
 
@@ -44,8 +45,8 @@ export default async function ReplacementsPage() {
           plaques={plaques ?? []}
         />
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <section className="mt-panel p-6">
+          <h2 className="text-lg font-bold text-[#17324d]">
             Replacement History
           </h2>
 
@@ -67,7 +68,7 @@ export default async function ReplacementsPage() {
                 return (
                   <div
                     key={request.id}
-                    className="rounded-xl border border-slate-200 p-4"
+                    className="rounded-xl border border-[#dbe4ea] bg-[#f8fcfd] p-4"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -77,17 +78,15 @@ export default async function ReplacementsPage() {
 
                         <p className="mt-1 text-sm text-slate-500">
                           {request.reason} ·{" "}
-                          {new Date(
-                            request.created_at
-                          ).toLocaleDateString("en-US", {
+                          {formatEasternDate(request.created_at, {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
-                          })}
+                          })} ET
                         </p>
                       </div>
 
-                      <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                      <span className="w-fit rounded-full mt-badge-neutral px-3 py-1 text-xs font-semibold capitalize">
                         {request.status.replaceAll("_", " ")}
                       </span>
                     </div>

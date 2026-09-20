@@ -69,13 +69,13 @@ export default function SettingsForm({
           value={name}
           onChange={(event) => setName(event.target.value)}
           maxLength={100}
-         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 caret-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500"
+         className="w-full rounded-xl border border-[#dbe4ea] bg-white px-4 py-2.5 text-sm text-slate-900 caret-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
         />
 
         <button
           type="submit"
           disabled={loading}
-          className="shrink-0 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+          className="shrink-0 rounded-xl bg-[#17324d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244560] disabled:opacity-60"
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>

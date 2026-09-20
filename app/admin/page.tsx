@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import ReplacementActions from "./replacement-actions";
 import SupportActions from "./support-actions";
 import BusinessesTable from "./businesses-table";
+import DesignRequestActions from "./design-request-actions";
+import { formatEasternDateTime } from "@/lib/format-eastern-time";
 
 type BusinessRow = {
   id: string;
@@ -117,6 +119,12 @@ const { data: replacementRequests } = await supabaseAdmin
     plaques(name)
   `)
   .order("created_at", { ascending: false });
+  const { data: designRequests, error: designRequestsError } = await supabaseAdmin
+    .from("design_change_requests")
+    .select("id, notes, inspiration_url, status, created_at, businesses(name), plaques(name)")
+    .order("created_at", { ascending: false });
+  if (designRequestsError) throw designRequestsError;
+
   return (
     <main className="min-h-screen bg-slate-50 p-6 lg:p-10">
       <div className="mx-auto max-w-7xl">
@@ -242,7 +250,7 @@ const { data: replacementRequests } = await supabaseAdmin
 
             <p className="mt-4 text-xs text-slate-400">
               Submitted{" "}
-              {new Date(request.created_at).toLocaleString("en-US")}
+              {formatEasternDateTime(request.created_at)}
             </p>
             <ReplacementActions
   requestId={request.id}
@@ -322,7 +330,7 @@ const { data: replacementRequests } = await supabaseAdmin
 
             <p className="mt-4 text-xs text-slate-400">
               Submitted{" "}
-              {new Date(ticket.created_at).toLocaleString("en-US")}
+              {formatEasternDateTime(ticket.created_at)}
             </p>
             <SupportActions
   ticketId={ticket.id}
@@ -334,7 +342,26 @@ const { data: replacementRequests } = await supabaseAdmin
     </div>
   )}
 </section>
-    
+<section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <h2 className="text-lg font-semibold text-slate-900">Design Requests</h2>
+  <p className="mt-1 text-sm text-slate-500">Manage customer requests for new plaque designs.</p>
+  {!designRequests?.length ? <p className="mt-6 text-sm text-slate-500">No design requests yet.</p> :
+    <div className="mt-6 space-y-4">{designRequests.map((item) => {
+      const business = Array.isArray(item.businesses) ? item.businesses[0] : item.businesses;
+      const plaque = Array.isArray(item.plaques) ? item.plaques[0] : item.plaques;
+      return <article key={item.id} className="rounded-xl border border-slate-200 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><p className="font-semibold text-slate-900">{business?.name ?? "Unknown business"}</p>
+            <p className="mt-1 text-sm text-slate-600">Plaque: {plaque?.name ?? "Unknown plaque"}</p></div>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{item.status}</span>
+        </div>
+        <p className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">{item.notes}</p>
+        {item.inspiration_url && <a href={item.inspiration_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block break-all text-sm text-teal-700 underline">Reference ↗</a>}
+        <p className="mt-3 text-xs text-slate-500">Submitted {formatEasternDateTime(item.created_at)}</p>
+        <DesignRequestActions requestId={item.id} status={item.status} />
+      </article>;
+    })}</div>}
+</section>
       </div>
     </main>
   );

@@ -13,13 +13,13 @@ export default async function NewPlaquePage() {
       <div className="mx-auto max-w-2xl">
         <Link
           href="/plaques"
-          className="text-sm font-medium text-slate-500 transition hover:text-slate-950"
+          className="text-sm font-medium text-slate-500 transition hover:text-[#17324d]"
         >
           ← Back to My Plaques
         </Link>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+        <div className="mt-6 mt-panel p-6 sm:p-8">
+          <p className="mt-kicker">
             Plaques
           </p>
 

@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import AppearanceEditor from "./appearance-editor";
 
 type Button = { id: string; label: string; destination_url: string; enabled: boolean; position: number };
-type Page = { heading: string | null; subheading: string | null; logo_path: string | null } | null;
+type Page = { heading: string | null; subheading: string | null; logo_path: string | null;
+  updated_at: string; theme_preset: string; background_color: string | null; text_color: string | null;
+  button_color: string | null; button_text_color: string | null; button_style: string | null;
+  button_radius: string | null } | null;
 
 async function save(plaqueId: string, body: Record<string, unknown>) {
   const response = await fetch(`/api/plaques/${encodeURIComponent(plaqueId)}/smart-page`, {
@@ -16,7 +20,8 @@ async function save(plaqueId: string, body: Record<string, unknown>) {
   }
 }
 
-function ButtonRow({ plaqueId, button, first, last }: { plaqueId: string; button: Button; first: boolean; last: boolean }) {
+function ButtonRow({ plaqueId, button, first, last, onDraftChange }: { plaqueId: string; button: Button; first: boolean; last: boolean;
+  onDraftChange: (id: string, patch: Partial<Button>) => void }) {
   const router = useRouter();
   const [label, setLabel] = useState(button.label);
   const [url, setUrl] = useState(button.destination_url);
@@ -33,17 +38,17 @@ function ButtonRow({ plaqueId, button, first, last }: { plaqueId: string; button
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save changes."); }
     finally { setBusy(false); }
   }
-  return <div className="rounded-xl border border-slate-200 p-4">
+  return <div className="rounded-xl border border-[#dbe4ea] bg-[#f8fcfd] p-4">
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="text-sm font-medium text-slate-700">Label
-        <input value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+        <input value={label} maxLength={80} onChange={(e) => { setLabel(e.target.value); onDraftChange(button.id, { label: e.target.value }); }} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
       </label>
       <label className="text-sm font-medium text-slate-700">Destination URL
-        <input value={url} onChange={(e) => setUrl(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="https://example.com" />
+        <input value={url} onChange={(e) => { setUrl(e.target.value); onDraftChange(button.id, { destination_url: e.target.value }); }} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="https://example.com" />
       </label>
     </div>
     <div className="mt-3 flex flex-wrap items-center gap-2">
-      <label className="mr-auto flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Enabled</label>
+      <label className="mr-auto flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); onDraftChange(button.id, { enabled: e.target.checked }); }} /> Enabled</label>
       <button type="button" disabled={busy || first} onClick={() => act("move_button", { direction: "up" })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-40">↑ Up</button>
       <button type="button" disabled={busy || last} onClick={() => act("move_button", { direction: "down" })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-40">↓ Down</button>
       <button type="button" disabled={busy} onClick={() => act("update_button", { label, destination_url: url, enabled })} className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Save</button>
@@ -67,8 +72,14 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
   const [logoMessage, setLogoMessage] = useState("");
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoPresent, setLogoPresent] = useState(!!page?.logo_path);
+  const [logoVersion, setLogoVersion] = useState(page?.updated_at ?? "");
+  const [previewButtons, setPreviewButtons] = useState(buttons);
   const logoInput = useRef<HTMLInputElement>(null);
-  useEffect(() => { setMode(initialMode); setHeading(page?.heading ?? ""); setSubheading(page?.subheading ?? ""); setLogoPresent(!!page?.logo_path); }, [initialMode, page]);
+  useEffect(() => { setMode(initialMode); setHeading(page?.heading ?? ""); setSubheading(page?.subheading ?? ""); setLogoPresent(!!page?.logo_path); setLogoVersion(page?.updated_at ?? ""); }, [initialMode, page]);
+  useEffect(() => { setPreviewButtons(buttons); }, [buttons]);
+  function onButtonDraftChange(id: string, patch: Partial<Button>) {
+    setPreviewButtons((current) => current.map((button) => button.id === id ? { ...button, ...patch } : button));
+  }
   async function act(body: Record<string, unknown>, success = "Changes saved.") {
     setBusy(true); setMessage("");
     try {
@@ -94,6 +105,7 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
       }
       setLogoFile(null);
       setLogoPresent(method === "POST");
+      setLogoVersion(String(Date.now()));
       if (logoInput.current) logoInput.current.value = "";
       setLogoMessage(method === "POST" ? "Logo uploaded." : "Logo removed.");
       router.refresh();
@@ -106,8 +118,8 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
     catch { return false; }
   });
   return <>
-    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Destination Mode</p>
+    <section className="mt-6 mt-panel p-6">
+      <p className="mt-kicker">Destination Mode</p>
       <p className="mt-2 text-sm text-slate-500">Choose what customers see when they tap this plaque.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {([ ["direct_link", "Direct Link"], ["smart_page", "Smart Page"] ] as const).map(([value, title]) =>
@@ -116,10 +128,10 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
       </div>
       {message && <p role="status" className="mt-3 text-sm text-slate-600">{message}</p>}
     </section>
-    {mode === "smart_page" && <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    {mode === "smart_page" && <section className="mt-6 mt-panel p-6">
       <h2 className="text-xl font-bold text-slate-950">Smart Page</h2>
       <a href={`/s/${encodeURIComponent(plaqueCode)}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-slate-700 underline hover:text-slate-950">Preview Smart Page ↗</a>
-      <div className="mt-6 rounded-xl border border-slate-200 p-4">
+      <div className="mt-6 rounded-xl border border-[#dbe4ea] bg-[#f8fcfd] p-4">
         <h3 className="font-semibold text-slate-950">Business Logo</h3>
         <p className="mt-1 text-sm text-slate-500">PNG, JPEG, or WebP. Maximum 4 MB.</p>
         {logoPresent && <p className="mt-2 text-sm text-slate-700">A logo is currently displayed on your Smart Page.</p>}
@@ -137,8 +149,11 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
         <label className="text-sm font-medium text-slate-700">Subheading (optional)<textarea value={subheading} maxLength={240} onChange={(e) => setSubheading(e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
       </div>
       <button type="button" disabled={busy} onClick={() => act({ action: "save_page", heading, subheading })} className="mt-4 rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Save Smart Page</button>
+      <AppearanceEditor plaqueId={plaqueId} initial={page ?? {}}
+        heading={heading} subheading={subheading} logoPresent={logoPresent} logoVersion={logoVersion}
+        buttons={previewButtons} />
       <h3 className="mt-8 text-lg font-bold text-slate-950">Buttons</h3>
-      <div className="mt-4 space-y-3">{buttons.map((button, index) => <ButtonRow key={button.id} plaqueId={plaqueId} button={button} first={index === 0} last={index === buttons.length - 1} />)}</div>
+      <div className="mt-4 space-y-3">{buttons.map((button, index) => <ButtonRow key={button.id} plaqueId={plaqueId} button={button} first={index === 0} last={index === buttons.length - 1} onDraftChange={onButtonDraftChange} />)}</div>
       <div className="mt-6 border-t border-slate-100 pt-5">
         <h4 className="text-sm font-semibold text-slate-950">Add Button</h4>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">

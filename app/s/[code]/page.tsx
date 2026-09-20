@@ -3,6 +3,7 @@ export const instant = false;
 import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import SmartPageLogo from "./smart-page-logo";
+import { resolveAppearance } from "@/lib/smart-page-appearance";
 
 function safeHttpUrl(value: string | null): string | null {
   if (!value) return null;
@@ -40,7 +41,7 @@ export default async function SmartPage({
   const fallback = safeHttpUrl(plaque.destination_url);
   const { data: page, error: pageError } = await supabase
     .from("smart_pages")
-    .select("id, heading, subheading, logo_path, updated_at")
+    .select("id, heading, subheading, logo_path, updated_at, theme_preset, background_color, text_color, button_color, button_text_color, button_style, button_radius")
     .eq("plaque_id", plaque.id)
     .maybeSingle();
 
@@ -53,6 +54,10 @@ export default async function SmartPage({
     if (fallback) redirect(fallback);
     notFound();
   }
+  const appearance = resolveAppearance(page);
+  const customStyle = !appearance.legacyClean;
+  const radius = appearance.buttonRadius === "pill" ? "9999px"
+    : appearance.buttonRadius === "square" ? "4px" : "12px";
 
   const { data: buttons, error: buttonsError } = await supabase
     .from("smart_page_buttons")
@@ -80,28 +85,43 @@ export default async function SmartPage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10 text-slate-950">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-center text-sm font-bold tracking-wide text-slate-500">ModernTap</p>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10 text-slate-950"
+      style={customStyle ? { backgroundColor: appearance.pageBackground, color: appearance.textColor } : undefined}>
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        style={customStyle ? { backgroundColor: appearance.surfaceBackground, borderColor: appearance.borderColor } : undefined}>
+        <p className="text-center text-sm font-bold tracking-wide text-slate-500"
+          style={customStyle ? { color: appearance.brandColor } : undefined}>ModernTap</p>
         {page.logo_path ? <SmartPageLogo key={page.updated_at} src={`/s/${encodeURIComponent(code)}/logo?v=${encodeURIComponent(page.updated_at)}`} /> : null}
         {page.heading ? (
-          <h1 className="mt-5 text-center text-3xl font-bold tracking-tight">{page.heading}</h1>
+          <h1 className="mt-5 text-center text-3xl font-bold tracking-tight"
+            style={customStyle ? { color: appearance.textColor } : undefined}>{page.heading}</h1>
         ) : null}
         {page.subheading ? (
-          <p className="mt-3 text-center text-sm leading-6 text-slate-600">{page.subheading}</p>
+          <p className="mt-3 text-center text-sm leading-6 text-slate-600"
+            style={customStyle ? { color: appearance.secondaryTextColor } : undefined}>{page.subheading}</p>
         ) : null}
         <div className="mt-8 space-y-3">
           {usableButtons.map((button) => (
             <a
               key={button.id}
               href={`/s/${encodeURIComponent(code)}/go/${encodeURIComponent(button.id)}`}
-              className="block rounded-xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
+              className={`block rounded-xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition ${customStyle ? "hover:opacity-90" : "hover:bg-slate-800"}`}
+              style={customStyle ? {
+                backgroundColor: appearance.buttonBackground,
+                color: appearance.buttonTextColor,
+                borderColor: appearance.buttonBorderColor,
+                borderStyle: "solid",
+                borderWidth: appearance.buttonStyle === "outline" ? 1 : 0,
+                borderRadius: radius,
+                minHeight: 48,
+              } : undefined}
             >
               {button.label}
             </a>
           ))}
         </div>
-        <p className="mt-8 text-center text-xs text-slate-400">Powered by ModernTap</p>
+        <p className="mt-8 text-center text-xs text-slate-400"
+          style={customStyle ? { color: appearance.footerColor } : undefined}>Powered by ModernTap</p>
       </div>
     </main>
   );

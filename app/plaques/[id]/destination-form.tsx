@@ -65,7 +65,7 @@ export default function DestinationForm({
 		<form onSubmit={saveDestination} className="mt-5">
 			<label
 				htmlFor="destination"
-				className="text-sm font-medium text-gray-700"
+				className="text-sm font-medium text-slate-700"
 			>
 				Destination URL
 			</label>
@@ -75,14 +75,14 @@ export default function DestinationForm({
 				type="text"
 				value={url}
 				onChange={(e) => setUrl(e.target.value)}
-				className="mt-2 w-full rounded-lg border px-4 py-3 text-gray-900 outline-none focus:ring-2 focus:ring-black"
+				className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-[#16c7c0]"
 				placeholder="https://example.com"
 			/>
 
 			<button
 				type="submit"
 				disabled={saving}
-				className="mt-4 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-50"
+				className="mt-4 rounded-lg bg-[#17324d] px-5 py-3 text-sm font-medium text-white disabled:opacity-50"
 			>
 				{saving ? "Saving..." : "Save Destination"}
 			</button>

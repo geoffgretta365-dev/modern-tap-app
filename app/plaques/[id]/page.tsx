@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import DestinationForm from "./destination-form";
 import SmartPageEditor from "./smart-page-editor";
+import PlaquePurposeForm from "./plaque-purpose-form";
 import AppShell from "@/app/components/app-shell";
 import { requireSubscription } from "@/lib/require-subscription";
 
@@ -23,6 +24,7 @@ export default async function PlaquePage({
       code,
       destination_url,
       mode,
+      purpose,
       active,
       businesses!inner (
         owner_id,
@@ -44,7 +46,7 @@ export default async function PlaquePage({
 
   const { data: smartPage, error: smartPageError } = await supabase
     .from("smart_pages")
-    .select("id, heading, subheading")
+    .select("id, heading, subheading, logo_path, updated_at, theme_preset, background_color, text_color, button_color, button_text_color, button_style, button_radius")
     .eq("plaque_id", plaque.id)
     .maybeSingle();
   if (smartPageError) throw smartPageError;
@@ -64,7 +66,7 @@ export default async function PlaquePage({
 
         <Link
           href="/plaques"
-          className="text-sm font-semibold text-slate-500 hover:text-slate-950"
+          className="text-sm font-semibold text-slate-500 hover:text-[#17324d]"
         >
           ← Back to My Plaques
         </Link>
@@ -72,7 +74,7 @@ export default async function PlaquePage({
         <div className="mt-6">
           <div className="flex items-center gap-3">
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+            <h1 className="text-3xl font-bold tracking-tight text-[#17324d]">
               {plaque.name}
             </h1>
 
@@ -93,18 +95,21 @@ export default async function PlaquePage({
           </p>
         </div>
 
+        <PlaquePurposeForm plaqueId={plaque.id} initialPurpose={plaque.purpose} />
+
         <SmartPageEditor
           plaqueId={plaque.id}
+          plaqueCode={plaque.code}
           initialMode={plaque.mode}
-          page={smartPage ? { heading: smartPage.heading, subheading: smartPage.subheading } : null}
+          page={smartPage}
           buttons={buttons ?? []}
         />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.5fr]">
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mt-panel p-6">
 
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mt-kicker">
               Plaque Details
             </p>
 
@@ -115,7 +120,7 @@ export default async function PlaquePage({
                   Plaque Code
                 </p>
 
-                <p className="mt-1 font-mono text-base font-semibold text-slate-950">
+                <p className="mt-1 font-mono text-base font-semibold text-[#17324d]">
                   {plaque.code}
                 </p>
               </div>
@@ -141,13 +146,13 @@ export default async function PlaquePage({
 
           </section>
 
-          {plaque.mode === "direct_link" && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          {plaque.mode === "direct_link" && <section className="mt-panel p-6">
 
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mt-kicker">
               Destination
             </p>
 
-            <h2 className="mt-2 text-xl font-bold text-slate-950">
+            <h2 className="mt-2 text-xl font-bold text-[#17324d]">
               Tap Destination
             </h2>
 

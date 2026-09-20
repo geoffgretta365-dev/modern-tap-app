@@ -56,7 +56,7 @@ export default function CheckoutButton({
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
           ? hasSubscription

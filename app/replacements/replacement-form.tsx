@@ -81,10 +81,10 @@ export default function ReplacementForm({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="mt-panel p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-bold text-[#17324d]">
             Request a Replacement
           </h2>
 
@@ -94,7 +94,7 @@ export default function ReplacementForm({
           </p>
         </div>
 
-        <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+        <span className="w-fit rounded-full mt-badge-teal px-3 py-1 text-xs font-semibold">
           Unlimited replacements
         </span>
       </div>
@@ -110,7 +110,7 @@ export default function ReplacementForm({
               value={plaqueId}
               onChange={(event) => setPlaqueId(event.target.value)}
               required
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-500"
+              className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#16c7c0]"
             >
               <option value="">Select a plaque</option>
 
@@ -130,7 +130,7 @@ export default function ReplacementForm({
             <select
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-500"
+              className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#16c7c0]"
             >
               <option>Damaged</option>
               <option>Lost or stolen</option>
@@ -152,7 +152,7 @@ export default function ReplacementForm({
             rows={4}
             maxLength={1000}
             placeholder="Tell us anything that will help us process the replacement."
-            className="mt-2 w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500"
+            className="mt-2 w-full resize-y rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
           />
         </label>
 
@@ -171,7 +171,7 @@ export default function ReplacementForm({
               onChange={(event) => setShippingName(event.target.value)}
               required
               placeholder="Recipient name"
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500 sm:col-span-2"
+              className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0] sm:col-span-2"
             />
 
             <input
@@ -179,14 +179,14 @@ export default function ReplacementForm({
               onChange={(event) => setAddress1(event.target.value)}
               required
               placeholder="Address line 1"
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500 sm:col-span-2"
+              className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0] sm:col-span-2"
             />
 
             <input
               value={address2}
               onChange={(event) => setAddress2(event.target.value)}
               placeholder="Address line 2 (optional)"
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500 sm:col-span-2"
+              className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0] sm:col-span-2"
             />
 
             <input
@@ -194,7 +194,7 @@ export default function ReplacementForm({
               onChange={(event) => setCity(event.target.value)}
               required
               placeholder="City"
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500"
+              className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -204,7 +204,7 @@ export default function ReplacementForm({
                 required
                 placeholder="State"
                 maxLength={30}
-                className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500"
+                className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
               />
 
               <input
@@ -213,7 +213,7 @@ export default function ReplacementForm({
                 required
                 placeholder="ZIP"
                 maxLength={10}
-                className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-500"
+                className="rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function ReplacementForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Submitting..." : "Request Replacement"}
         </button>

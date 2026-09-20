@@ -65,14 +65,14 @@ export default function SupportForm({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="mt-panel p-5 sm:p-6">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-lg font-bold text-[#17324d]">
           Contact ModernTap Support
         </h2>
 
         <p className="mt-1 text-sm text-slate-500">
-          Tell us what you need help with and we'll get back to you.
+          Tell us what you need help with and we&apos;ll get back to you.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export default function SupportForm({
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-500"
+              className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#16c7c0]"
             >
               <option>Plaque / NFC issue</option>
               <option>Replacement request</option>
@@ -105,7 +105,7 @@ export default function SupportForm({
             <select
               value={plaqueId}
               onChange={(event) => setPlaqueId(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-500"
+              className="mt-2 w-full rounded-xl border border-[#dbe4ea] bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#16c7c0]"
             >
               <option value="">
                 Not related to a specific plaque
@@ -132,7 +132,7 @@ export default function SupportForm({
             required
             maxLength={120}
             placeholder="Briefly describe the issue"
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500"
+            className="mt-2 w-full rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
           />
         </label>
 
@@ -148,7 +148,7 @@ export default function SupportForm({
             rows={6}
             maxLength={2000}
             placeholder="Give us the details so we can help as quickly as possible."
-            className="mt-2 w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500"
+            className="mt-2 w-full resize-y rounded-xl border border-[#dbe4ea] px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
           />
         </label>
 
@@ -167,7 +167,7 @@ export default function SupportForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading
             ? "Submitting..."

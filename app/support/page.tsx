@@ -1,6 +1,7 @@
 export const instant = false;
 
 import AppShell from "@/app/components/app-shell";
+import { formatEasternDate } from "@/lib/format-eastern-time";
 import { requireSubscription } from "@/lib/require-subscription";
 import SupportForm from "./support-form";
 
@@ -21,13 +22,13 @@ export default async function SupportPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-5xl space-y-8">
+      <div className="mx-auto max-w-[1280px] space-y-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-kicker">
             Help Center
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17324d]">
             Support
           </h1>
 
@@ -39,9 +40,9 @@ export default async function SupportPage() {
 
         <SupportForm businessId={business.id} plaques={plaques ?? []} />
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-panel p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-bold text-[#17324d]">
               Your Support Requests
             </h2>
 
@@ -59,7 +60,7 @@ export default async function SupportPage() {
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-[#dbe4ea] bg-[#f8fcfd] p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <p className="font-semibold text-slate-900">
@@ -68,15 +69,15 @@ export default async function SupportPage() {
 
                     <p className="mt-1 text-sm text-slate-500">
                       {ticket.category} ·{" "}
-                      {new Date(ticket.created_at).toLocaleDateString("en-US", {
+                      {formatEasternDate(ticket.created_at, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
-                      })}
+                      })} ET
                     </p>
                   </div>
 
-                  <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                  <span className="w-fit rounded-full mt-badge-neutral px-3 py-1 text-xs font-semibold capitalize">
                     {ticket.status.replaceAll("_", " ")}
                   </span>
                 </div>
