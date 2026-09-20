@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+function safeHttpUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ code: string }> }
@@ -11,7 +23,7 @@ export async function GET(
   // Find the plaque using its unique code
   const { data: plaque, error } = await supabase
     .from("plaques")
-    .select("id, destination_url")
+    .select("id, mode, destination_url")
     .eq("code", code)
     .eq("active", true)
     .maybeSingle();
@@ -34,6 +46,17 @@ export async function GET(
     console.error("Public plaque tap insert failed", { code: tapError.code });
   }
 
-  // Send customer to the plaque's real destination
-  return NextResponse.redirect(plaque.destination_url);
+  if (plaque.mode === "smart_page") {
+    return NextResponse.redirect(
+      new URL(`/s/${encodeURIComponent(code)}`, request.url)
+    );
+  }
+
+  const destination = safeHttpUrl(plaque.destination_url);
+  if (!destination) {
+    return new NextResponse("Plaque destination unavailable", { status: 503 });
+  }
+
+  // Direct Link plaques retain their existing redirect behavior.
+  return NextResponse.redirect(destination);
 }
