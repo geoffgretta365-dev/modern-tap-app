@@ -2,6 +2,7 @@ export const instant = false;
 
 import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import SmartPageLogo from "./smart-page-logo";
 
 function safeHttpUrl(value: string | null): string | null {
   if (!value) return null;
@@ -39,7 +40,7 @@ export default async function SmartPage({
   const fallback = safeHttpUrl(plaque.destination_url);
   const { data: page, error: pageError } = await supabase
     .from("smart_pages")
-    .select("id, heading, subheading")
+    .select("id, heading, subheading, logo_path, updated_at")
     .eq("plaque_id", plaque.id)
     .maybeSingle();
 
@@ -82,6 +83,7 @@ export default async function SmartPage({
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10 text-slate-950">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-center text-sm font-bold tracking-wide text-slate-500">ModernTap</p>
+        {page.logo_path ? <SmartPageLogo key={page.updated_at} src={`/s/${encodeURIComponent(code)}/logo?v=${encodeURIComponent(page.updated_at)}`} /> : null}
         {page.heading ? (
           <h1 className="mt-5 text-center text-3xl font-bold tracking-tight">{page.heading}</h1>
         ) : null}
