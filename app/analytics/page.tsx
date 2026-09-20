@@ -6,6 +6,7 @@ import { requireSubscription } from "@/lib/require-subscription";
 
 type Plaque = { id: string; name: string; destination_url: string | null; active: boolean };
 type Tap = { plaque_id: string; created_at: string };
+type SmartPageClick = { id: string; plaque_id: string; button_label_snapshot: string; created_at: string };
 type Period = 7 | 30 | 90;
 const DAY = 86_400_000;
 const PAGE_SIZE = 1000;
@@ -63,6 +64,11 @@ export default async function AnalyticsPage({ searchParams }: {
   let weekTaps = 0;
   let monthTaps = 0;
   let recent: Tap[] = [];
+  let recentClicks: SmartPageClick[] = [];
+  let currentClicks = 0;
+  let previousClicks = 0;
+  const clicksByLabel = new Map<string, number>();
+  const clicksByPlaque = new Map<string, number>();
 
   if (ids.length) {
     // Aggregate all-time counts page by page; retain only the plaque IDs.
@@ -116,6 +122,36 @@ export default async function AnalyticsPage({ searchParams }: {
       .order("created_at", { ascending: false }).limit(8);
     if (error) throw error;
     recent = data ?? [];
+
+    // Clicks stay separate from plaque taps, including in the comparison window.
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data: clicks, error: clicksError } = await supabase.from("smart_page_clicks")
+        .select("id, plaque_id, button_label_snapshot, created_at")
+        .in("plaque_id", ids)
+        .gte("created_at", previousStart.toISOString())
+        .lte("created_at", now.toISOString())
+        .order("created_at").order("id")
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (clicksError) throw clicksError;
+      for (const click of clicks ?? []) {
+        if (new Date(click.created_at) < currentStart) {
+          previousClicks++;
+        } else {
+          currentClicks++;
+          clicksByLabel.set(click.button_label_snapshot, (clicksByLabel.get(click.button_label_snapshot) ?? 0) + 1);
+          clicksByPlaque.set(click.plaque_id, (clicksByPlaque.get(click.plaque_id) ?? 0) + 1);
+        }
+      }
+      if (!clicks || clicks.length < PAGE_SIZE) break;
+    }
+
+    const { data: latestClicks, error: latestClicksError } = await supabase.from("smart_page_clicks")
+      .select("id, plaque_id, button_label_snapshot, created_at")
+      .in("plaque_id", ids)
+      .order("created_at", { ascending: false }).order("id", { ascending: false })
+      .limit(8);
+    if (latestClicksError) throw latestClicksError;
+    recentClicks = latestClicks ?? [];
   }
 
   const comparison = previous === 0
@@ -130,6 +166,12 @@ export default async function AnalyticsPage({ searchParams }: {
     (periodByPlaque.get(b.id) ?? 0) - (periodByPlaque.get(a.id) ?? 0) ||
     a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   const maxDay = Math.max(1, ...days.map((day) => day.taps));
+  const clickComparison = previousClicks === 0
+    ? "No button clicks in previous period"
+    : `${currentClicks >= previousClicks ? "+" : ""}${Math.round((currentClicks - previousClicks) / previousClicks * 100)}% vs previous ${period} days`;
+  const topButtons = [...clicksByLabel].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const topClickPlaques = [...clicksByPlaque].sort((a, b) => b[1] - a[1] ||
+    (names.get(a[0]) ?? "").localeCompare(names.get(b[0]) ?? "") || a[0].localeCompare(b[0]));
 
   return <AppShell businessName={business.name}>
     <div className="mx-auto max-w-7xl">
@@ -227,6 +269,55 @@ export default async function AnalyticsPage({ searchParams }: {
                   <td className="pl-4 py-3 text-slate-700">{plaque.active ? "Active" : "Inactive"}</td>
                 </tr>)}</tbody>
             </table></div>}
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-950">Smart Page Engagement</h2>
+        <p className="mt-1 text-sm text-slate-500">Button clicks in the selected {period}-day period. Clicks are separate from plaque taps.</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Card title="Smart Page Button Clicks" value={currentClicks} detail={`Selected ${period} days, including today`} />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-sm font-medium text-slate-500">Previous Period</p>
+            <p className="mt-3 text-3xl font-bold text-slate-950">{previousClicks.toLocaleString("en-US")}</p>
+            <p className="mt-2 text-xs text-slate-500">{clickComparison}</p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="font-semibold text-slate-950">Top Clicked Buttons</h3>
+            <p className="mt-1 text-xs text-slate-500">Grouped by the label recorded when each button was clicked.</p>
+            {topButtons.length === 0
+              ? <p className="mt-4 text-sm text-slate-500">No button clicks in this period.</p>
+              : <div className="mt-3 divide-y divide-slate-100">{topButtons.map(([label, count]) =>
+                  <div key={label} className="flex items-start justify-between gap-3 py-3 text-sm">
+                    <span className="break-words font-medium text-slate-800">{label}</span>
+                    <span className="shrink-0 font-semibold text-slate-950">{count.toLocaleString("en-US")} clicks</span>
+                  </div>)}</div>}
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-950">Clicks by Plaque</h3>
+            <p className="mt-1 text-xs text-slate-500">Smart Page button clicks for each plaque.</p>
+            {topClickPlaques.length === 0
+              ? <p className="mt-4 text-sm text-slate-500">No Smart Page plaque clicks in this period.</p>
+              : <div className="mt-3 divide-y divide-slate-100">{topClickPlaques.map(([plaqueId, count]) =>
+                  <div key={plaqueId} className="flex items-start justify-between gap-3 py-3 text-sm">
+                    <span className="font-medium text-slate-800">{names.get(plaqueId) ?? "Plaque"}</span>
+                    <span className="shrink-0 font-semibold text-slate-950">{count.toLocaleString("en-US")} clicks</span>
+                  </div>)}</div>}
+          </div>
+        </div>
+        <div className="mt-6 border-t border-slate-100 pt-5">
+          <h3 className="font-semibold text-slate-950">Recent Button Clicks</h3>
+          {recentClicks.length === 0
+            ? <p className="mt-4 text-sm text-slate-500">No button click activity yet.</p>
+            : <div className="mt-3 divide-y divide-slate-100">{recentClicks.map((click) =>
+                <div key={click.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                  <span className="font-medium text-slate-900">{click.button_label_snapshot} <span className="font-normal text-slate-500">· {names.get(click.plaque_id) ?? "Plaque"}</span></span>
+                  <time className="text-slate-500" dateTime={click.created_at}>
+                    {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(click.created_at))} UTC
+                  </time>
+                </div>)}</div>}
+        </div>
       </section>
 
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
