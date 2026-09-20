@@ -1,40 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+export const instant = false;
+
 import Link from "next/link";
 import AppShell from "@/app/components/app-shell";
+import { requireSubscription } from "@/lib/require-subscription";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id, name")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!business) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-3xl font-bold text-slate-950">
-            ModernTap
-          </h1>
-
-          <p className="mt-2 text-slate-500">
-            No business found for this account.
-          </p>
-        </div>
-      </AppShell>
-    );
-  }
+  const { supabase, business } = await requireSubscription();
 
   const { data: plaques } = await supabase
     .from("plaques")

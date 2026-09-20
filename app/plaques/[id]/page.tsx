@@ -1,10 +1,10 @@
 export const instant = false;
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import DestinationForm from "./destination-form";
 import AppShell from "@/app/components/app-shell";
+import { requireSubscription } from "@/lib/require-subscription";
 
 export default async function PlaquePage({
   params,
@@ -12,15 +12,7 @@ export default async function PlaquePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
+  const { supabase, user } = await requireSubscription();
 
   const { data: plaque } = await supabase
     .from("plaques")

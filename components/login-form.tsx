@@ -38,8 +38,25 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  throw new Error("Could not load your account.");
+}
+
+const { data: business, error: businessError } = await supabase
+  .from("businesses")
+  .select("id")
+  .eq("owner_id", user.id)
+  .maybeSingle();
+
+if (businessError) throw businessError;
+
+router.push(business ? "/dashboard" : "/onboarding");
+router.refresh();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
