@@ -3,27 +3,16 @@ export const instant = false;
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import AppShell from "@/app/components/app-shell";
 import CheckoutButton from "./checkout-button";
 import { isTerminalSubscriptionStatus } from "@/lib/stripe/subscription-status";
 
 export default async function BillingPage() {
-  // TEMPORARY AUTH_DIAG: correlate Billing's independent auth check with the proxy.
-  const requestId = (await headers()).get("x-moderntap-auth-diag-id") ?? "unavailable";
   const supabase = await createClient();
 
   const {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser();
-  console.info("[AUTH_DIAG]", {
-    requestId, layer: "billing", pathname: "/billing",
-    userFound: Boolean(user),
-    errorCode: authError?.code ?? null,
-    errorMessage: authError?.message ?? null,
-    outcome: user ? "continue" : "redirect /auth/login",
-  });
 
   if (!user) {
     redirect("/auth/login");

@@ -81,13 +81,15 @@ export default function AppShell({
             </p>
           </div>
 
-          <Link
-            href="/auth/signout"
-            className="mt-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950"
-          >
-            <span className="w-5 text-center">↪</span>
-            Sign Out
-          </Link>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+            >
+              <span className="w-5 text-center">↪</span>
+              Sign Out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -189,13 +191,15 @@ export default function AppShell({
                   </p>
                 </div>
 
-                <Link
-                  href="/auth/signout"
-                  className="mt-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950"
-                >
-                  <span className="w-5 text-center">↪</span>
-                  Sign Out
-                </Link>
+                <form action="/auth/signout" method="post">
+                  <button
+                    type="submit"
+                    className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+                  >
+                    <span className="w-5 text-center">↪</span>
+                    Sign Out
+                  </button>
+                </form>
               </div>
             </div>
           </div>

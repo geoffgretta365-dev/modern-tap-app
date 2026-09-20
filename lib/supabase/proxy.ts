@@ -3,15 +3,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
-  // TEMPORARY AUTH_DIAG: correlate proxy and page logs without recording credentials.
-  const diagnosticPath = request.nextUrl.pathname.match(
-    /^\/(dashboard|plaques|analytics|billing|support|replacements|settings)(?:\/|$)/,
-  )?.[1];
-  const diagnosticId = diagnosticPath ? crypto.randomUUID().slice(0, 8) : null;
-  if (diagnosticId) {
-    request.headers.set("x-moderntap-auth-diag-id", diagnosticId);
-    request.headers.set("x-moderntap-auth-diag-path", `/${diagnosticPath}`);
-  }
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -19,12 +10,6 @@ export async function updateSession(request: NextRequest) {
   // If the env vars are not set, skip proxy check. You can remove this
   // once you setup the project.
   if (!hasEnvVars) {
-    if (diagnosticId) {
-      console.info("[AUTH_DIAG]", {
-        requestId: diagnosticId, layer: "proxy", pathname: `/${diagnosticPath}`,
-        claimsFound: false, outcome: "session check skipped: Supabase config unavailable",
-      });
-    }
     return supabaseResponse;
   }
 
@@ -62,17 +47,8 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getClaims() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const { data, error: claimsError } = await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
-  if (diagnosticId) {
-    console.info("[AUTH_DIAG]", {
-      requestId: diagnosticId, layer: "proxy", pathname: `/${diagnosticPath}`,
-      claimsFound: Boolean(user),
-      errorCode: claimsError?.code ?? null,
-      errorMessage: claimsError?.message ?? null,
-      outcome: user ? "continue" : "no claims",
-    });
-  }
 
   if (
     request.nextUrl.pathname !== "/" &&
@@ -81,12 +57,6 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/t/")
   ) {
-    if (diagnosticId) {
-      console.info("[AUTH_DIAG]", {
-        requestId: diagnosticId, layer: "proxy", pathname: `/${diagnosticPath}`,
-        redirect: "/auth/login",
-      });
-    }
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
