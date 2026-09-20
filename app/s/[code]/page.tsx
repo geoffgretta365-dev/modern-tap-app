@@ -68,8 +68,9 @@ export default async function SmartPage({
   }
 
   const usableButtons = (buttons ?? []).flatMap((button) => {
-    const href = safeHttpUrl(button.destination_url);
-    return href ? [{ id: button.id, label: button.label, href }] : [];
+    return safeHttpUrl(button.destination_url)
+      ? [{ id: button.id, label: button.label }]
+      : [];
   });
 
   if (usableButtons.length === 0) {
@@ -91,7 +92,7 @@ export default async function SmartPage({
           {usableButtons.map((button) => (
             <a
               key={button.id}
-              href={button.href}
+              href={`/s/${encodeURIComponent(code)}/go/${encodeURIComponent(button.id)}`}
               className="block rounded-xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               {button.label}
