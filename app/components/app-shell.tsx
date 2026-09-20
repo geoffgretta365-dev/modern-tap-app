@@ -55,6 +55,7 @@ export default function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={false}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                   active
                     ? "bg-slate-950 text-white shadow-sm"
@@ -161,6 +162,7 @@ export default function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={false}
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                         active
