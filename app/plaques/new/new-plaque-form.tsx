@@ -1,14 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-export default function NewPlaqueForm({
-  businessId,
-}: {
-  businessId: string;
-}) {
+export default function NewPlaqueForm() {
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
   const [purpose, setPurpose] = useState<"general" | "review">("general");
@@ -16,10 +11,6 @@ export default function NewPlaqueForm({
   const [message, setMessage] = useState("");
 
   const router = useRouter();
-
-  function generateCode() {
-    return crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
-  }
 
   async function createPlaque(e: React.FormEvent) {
     e.preventDefault();
@@ -50,23 +41,11 @@ export default function NewPlaqueForm({
       return;
     }
 
-    const supabase = createClient();
-
-    const { error } = await supabase.from("plaques").insert({
-      business_id: businessId,
-      name: name.trim(),
-      code: generateCode(),
-      destination_url: cleanUrl,
-      active: true,
-      purpose,
-    });
-
-    if (error) {
-      console.error(error);
-      setMessage("Could not create the plaque.");
-      setSaving(false);
-      return;
-    }
+    try {
+      const response = await fetch("/api/plaques", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim(), destination: cleanUrl, purpose }) });
+      const result = await response.json();
+      if (!response.ok) { setMessage(result.error ?? "Could not create the plaque."); setSaving(false); return; }
+    } catch { setMessage("Could not connect. Refresh before trying again."); setSaving(false); return; }
 
     router.push("/plaques");
     router.refresh();

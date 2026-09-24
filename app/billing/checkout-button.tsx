@@ -4,10 +4,13 @@ import { useState } from "react";
 
 type CheckoutButtonProps = {
   hasSubscription?: boolean;
+  planKey?: string;
+  disabled?: boolean;
+  label?: string;
 };
 
 export default function CheckoutButton({
-  hasSubscription = false,
+  hasSubscription = false, planKey, disabled = false, label,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +26,7 @@ export default function CheckoutButton({
 
       const response = await fetch(endpoint, {
         method: "POST",
+        ...(!hasSubscription && planKey ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planKey }) } : {}),
       });
 
       const data = await response.json();
@@ -55,7 +59,7 @@ export default function CheckoutButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading}
+        disabled={loading || disabled}
         className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16c7c0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
@@ -64,7 +68,7 @@ export default function CheckoutButton({
             : "Opening Checkout..."
           : hasSubscription
             ? "Manage Subscription"
-            : "Start Subscription"}
+            : label ?? "Start Subscription"}
       </button>
 
       {error ? (

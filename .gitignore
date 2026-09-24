@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Isolated Supabase sandbox, private baselines, credentials and generated migrations
+/.local-supabase/
+/supabase/.temp/
+/supabase/.branches/

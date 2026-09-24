@@ -1,4 +1,6 @@
+import { plaqueEntitlementsEnabled } from "@/lib/plans/entitlements-enabled";
 export const instant = false;
+import PlaqueStatusButton from "../plaque-status-button";
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -95,6 +97,7 @@ export default async function PlaquePage({
           </p>
         </div>
 
+        {plaqueEntitlementsEnabled() && <PlaqueStatusButton id={plaque.id} active={plaque.active}/>}
         <PlaquePurposeForm plaqueId={plaque.id} initialPurpose={plaque.purpose} />
 
         <SmartPageEditor

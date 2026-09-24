@@ -1,4 +1,7 @@
+import { plaqueEntitlementsEnabled } from "@/lib/plans/entitlements-enabled";
 export const instant = false;
+import { readPlaqueEntitlement, canAddPlaque } from "@/lib/plans/plaque-entitlement";
+import PlaqueAllowance from "@/components/plans/plaque-allowance";
 
 import Link from "next/link";
 import NewPlaqueForm from "./new-plaque-form";
@@ -7,6 +10,8 @@ import { requireSubscription } from "@/lib/require-subscription";
 
 export default async function NewPlaquePage() {
   const { business } = await requireSubscription();
+
+  const entitlement = plaqueEntitlementsEnabled() ? await readPlaqueEntitlement(business.id) : null;
 
   return (
     <AppShell businessName={business.name}>
@@ -31,7 +36,7 @@ export default async function NewPlaquePage() {
             Create a new smart plaque for {business.name}.
           </p>
 
-          <NewPlaqueForm businessId={business.id} />
+          {!entitlement || canAddPlaque(entitlement) ? <NewPlaqueForm /> : <PlaqueAllowance entitlement={entitlement} blocked/>}
         </div>
       </div>
     </AppShell>

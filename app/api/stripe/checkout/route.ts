@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isTerminalSubscriptionStatus } from "@/lib/stripe/subscription-status";
 
+import { getPlan } from "@/lib/plans/catalog";
+import { approvedPriceId, readPlanPrice } from "@/lib/plans/stripe-prices";
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(request: Request) {
@@ -66,14 +69,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID;
-
-  if (!priceId) {
-    return NextResponse.json(
-      { error: "Stripe price is not configured" },
-      { status: 500 }
-    );
-  }
+  // Checkout requires an explicit catalog key. Legacy prices remain management-only.
+  // Any supplied configuration must be an approved plan key, never a Stripe ID.
+  let planKey: unknown;
+  try {
+    const raw = await request.text();
+    if (raw.trim()) {
+      const input: unknown = JSON.parse(raw);
+      if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(key => key !== "planKey")) {
+        return NextResponse.json({ error: "Send only a valid planKey." }, { status: 400 });
+      }
+      planKey = (input as { planKey?: unknown }).planKey;
+    }
+  } catch { return NextResponse.json({ error: "Invalid checkout request." }, { status: 400 }); }
+  const plan = getPlan(planKey);
+  if (!plan) return NextResponse.json({ error: "Unknown plan." }, { status: 400 });
+  const priceId = approvedPriceId(plan);
+  if (!priceId || !(await readPlanPrice(plan)).available) return NextResponse.json({ error: "Checkout is unavailable for this plan." }, { status: 503 });
 
   const origin = new URL(request.url).origin;
 
@@ -90,10 +102,12 @@ export async function POST(request: Request) {
     cancel_url: `${origin}/billing?checkout=cancelled`,
     metadata: {
       business_id: business.id,
+      plan_key: plan.key,
     },
     subscription_data: {
       metadata: {
         business_id: business.id,
+      plan_key: plan.key,
       },
     },
   });

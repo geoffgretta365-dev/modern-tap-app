@@ -191,7 +191,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <div className="mt-9 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="mt-9 grid min-w-0 gap-6">
 
           <section className="mt-card min-w-0 p-5 sm:p-6">
 
@@ -264,38 +264,7 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          <section className="mt-card min-w-0 p-5 sm:p-6">
 
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f8f8a]">
-              MODERNTAP TOOLS
-            </p>
-
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#17324d]">
-              Everything in one place.
-            </h2>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Control your plaques, review performance, update customer destinations, and request design support whenever you need it.
-            </p>
-
-            <div className="mt-6 space-y-4">
-              {[
-                { title: "Plaque Control", description: "Manage active plaques and where customers are sent." },
-                { title: "Performance Analytics", description: "Understand engagement across your locations and placements." },
-                { title: "Design Support", description: "Request eligible plaque design updates from your account." },
-              ].map((feature) => (
-                <div key={feature.title} className="rounded-xl bg-[#f3f7f9] p-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wide text-[#17324d]">{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{feature.description}</p>
-                </div>
-              ))}
-            </div>
-
-            <Link href="/plaques" className="mt-primary-action mt-6">
-              Manage My Plaques
-            </Link>
-
-          </section>
 
         </div>
 

@@ -65,7 +65,7 @@ export function LoginForm({
 
       if (businessError) throw businessError;
 
-      router.push(business ? "/dashboard" : "/onboarding");
+      router.push(business ? "/tour" : "/onboarding");
       router.refresh();
     } catch {
       setError("We couldn't sign you in. Please try again.");

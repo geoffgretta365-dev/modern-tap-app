@@ -41,7 +41,7 @@ export default function OnboardingForm({ userId }: Props) {
         });
 
       if (insertError) throw insertError;
-      router.push("/dashboard");
+      router.push("/tour");
       router.refresh();
     } catch {
       setError("Could not create your business. Please try again.");
@@ -88,7 +88,7 @@ export default function OnboardingForm({ userId }: Props) {
       >
         {loading
           ? "Creating Business..."
-          : "Continue to Dashboard"}
+          : "Continue to Tour"}
       </button>
     </form>
   );

@@ -1,3 +1,4 @@
+import { plaqueEntitlementsEnabled } from "@/lib/plans/entitlements-enabled";
 export const instant = false;
 
 import { createClient } from "@/lib/supabase/server";
@@ -5,6 +6,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import AppShell from "@/app/components/app-shell";
 import { formatEasternDate } from "@/lib/format-eastern-time";
+import Link from "next/link";
+import ActivationStatus from "./activation-status";
+import { hasConfirmedActivation } from "@/lib/stripe/activation";
+import { planForPrice, readPlanPrice } from "@/lib/plans/stripe-prices";
+import PlanSelector from "@/components/plans/plan-selector";
+import { PLANS, planBenefits } from "@/lib/plans/catalog";
 import CheckoutButton from "./checkout-button";
 import { isTerminalSubscriptionStatus } from "@/lib/stripe/subscription-status";
 
@@ -18,7 +25,8 @@ function validDate(value: string | null | undefined) {
   return value && Number.isFinite(new Date(value).getTime()) ? value : null;
 }
 
-export default async function BillingPage() {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
+  const checkout = (await searchParams).checkout;
   const supabase = await createClient();
 
   const {
@@ -38,7 +46,7 @@ export default async function BillingPage() {
   const { data: subscription, error: subscriptionError } = business
     ? await createAdminClient()
         .from("subscriptions")
-        .select("status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, cancel_at")
+        .select("status, stripe_customer_id, stripe_subscription_id, stripe_price_id, current_period_end, cancel_at_period_end, cancel_at")
         .eq("business_id", business.id)
         .maybeSingle()
     : { data: null, error: null };
@@ -62,12 +70,31 @@ export default async function BillingPage() {
     );
   }
 
+  if (checkout === "success") return <AppShell businessName={business.name}>
+    <div className="mx-auto max-w-2xl"><p className="mt-kicker">ModernTap · Subscription</p>
+      <ActivationStatus initiallyActive={hasConfirmedActivation(subscription)} />
+      <Link href="/billing" className="mt-5 inline-block text-sm text-[#0f766e] underline">Back to Billing</Link>
+    </div>
+  </AppShell>;
+  const currentPlan = planForPrice(subscription?.stripe_price_id);
+  const currentPrice = currentPlan ? await readPlanPrice(currentPlan) : null;
+
   const isActiveSubscription =
     subscription?.status === "active" || subscription?.status === "trialing";
   const canManageSubscription = Boolean(
     subscription?.stripe_customer_id &&
       !isTerminalSubscriptionStatus(subscription.status)
   );
+
+  if (!isActiveSubscription) {
+    const canChoose = !subscription || isTerminalSubscriptionStatus(subscription.status);
+    const prices = Object.fromEntries(await Promise.all(PLANS.filter(plan => !plan.custom).map(async plan => [plan.key, await readPlanPrice(plan)])));
+    return <AppShell businessName={business.name}><div className="mx-auto max-w-7xl">
+      {checkout === "cancelled" && <p role="status" className="mb-5 text-sm text-slate-600">Checkout was cancelled. No subscription was activated by this return.</p>}
+      <PlanSelector prices={prices} canChoose={canChoose}/>
+      {!canChoose && <section className="mt-panel mt-6 p-5"><h2 className="text-lg font-bold">Your subscription needs attention</h2><p className="mt-2 text-sm text-slate-600">Resolve your existing subscription before choosing another plan.</p>{canManageSubscription ? <CheckoutButton hasSubscription/> : <p className="mt-3 text-sm">Contact ModernTap to help restore billing access for your existing subscription.</p>}</section>}
+    </div></AppShell>;
+  }
 
   const statusLabel = !subscription ? "Not Started"
     : statusLabels[subscription.status] ?? "Status Unavailable";
@@ -124,7 +151,7 @@ export default async function BillingPage() {
                 </p>
 
                 <h2 className="mt-3 text-2xl font-bold text-[#17324d]">
-                  ModernTap Service
+                  {currentPlan?.name ?? "ModernTap Service"}
                 </h2>
 
                 <p className="mt-2 text-sm text-slate-500">
@@ -138,6 +165,7 @@ export default async function BillingPage() {
 
             </div>
 
+            {currentPrice?.interval && <p className="mt-4 text-xl font-semibold text-[#17324d]">{currentPrice.label}<span className="mt-1 block text-xs font-normal text-slate-500">Base price. Discounts, quantities, and taxes may change your invoice total.</span></p>}
             <dl className="mt-6 grid gap-4 rounded-xl bg-[#f3f7f9] p-4 sm:grid-cols-2">
               <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</dt><dd className="mt-2 text-sm font-semibold text-[#17324d]">{statusSummary}</dd></div>
               {(cancellationDate || periodEnd) && <div>
@@ -154,14 +182,12 @@ export default async function BillingPage() {
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
 
-                <Feature text="Plaque management" />
-                <Feature text="Remote destination updates" />
-                <Feature text="Engagement analytics" />
-                <Feature text="Smart Pages" />
-                <Feature text="Smart Page action tracking" />
-                <Feature text="Design support" />
-                <Feature text="Replacement request support" />
-                <Feature text="Customer dashboard" />
+                {currentPlan ? planBenefits(currentPlan).map(text => <Feature key={text} text={text} />) : <>
+                  <Feature text="Plaque management" /><Feature text="Remote destination updates" />
+                  <Feature text="Engagement analytics" /><Feature text="Smart Pages" />
+                  <Feature text="Smart Page action tracking" /><Feature text="Design support" />
+                  <Feature text="Replacement request support" /><Feature text="Customer dashboard" />
+                </>}
 
               </div>
 
@@ -212,7 +238,13 @@ export default async function BillingPage() {
               : "Start or restore your ModernTap subscription securely through Stripe."}
           </p>
 
-          <CheckoutButton hasSubscription={canManageSubscription} />
+          {plaqueEntitlementsEnabled() && isActiveSubscription && <Link href="/billing/change-plan" className="mt-secondary-action mt-5">Change Plan</Link>}
+          {canManageSubscription ? <CheckoutButton hasSubscription /> : isActiveSubscription
+            ? <Link href="/dashboard" className="mt-primary-action mt-6">Open ModernTap</Link>
+            : !subscription || isTerminalSubscriptionStatus(subscription.status)
+              ? <Link href="/billing" className="mt-primary-action mt-6">Choose Your Plan</Link>
+              : <p className="mt-4 text-sm text-slate-600">Contact ModernTap to help restore billing access for your existing subscription.</p>}
+          {checkout === "cancelled" && <p role="status" className="mt-3 text-sm text-slate-600">Checkout was cancelled. You can review your plan when you’re ready.</p>}
         </section>
 
       </div>

@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
     .maybeSingle();
 
   if (business) {
-    redirect("/dashboard");
+    redirect("/tour");
   }
 
   return (

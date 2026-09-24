@@ -1,4 +1,7 @@
+import { plaqueEntitlementsEnabled } from "@/lib/plans/entitlements-enabled";
 export const instant = false;
+import { readPlaqueEntitlement } from "@/lib/plans/plaque-entitlement";
+import PlaqueAllowance from "@/components/plans/plaque-allowance";
 
 import Link from "next/link";
 import AppShell from "@/app/components/app-shell";
@@ -13,6 +16,7 @@ export default async function PlaquesPage() {
     .eq("business_id", business.id)
     .order("created_at", { ascending: false });
 
+  const entitlement = plaqueEntitlementsEnabled() ? await readPlaqueEntitlement(business.id) : null;
   const smartPlaqueIds = (plaques ?? []).filter((plaque) => plaque.mode === "smart_page").map((plaque) => plaque.id);
   const { data: smartPages, error: pagesError } = smartPlaqueIds.length
     ? await supabase.from("smart_pages").select("id, plaque_id").in("plaque_id", smartPlaqueIds)
@@ -46,14 +50,10 @@ export default async function PlaquesPage() {
             </p>
           </div>
 
-          <Link
-            href="/plaques/new"
-            className="w-fit rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            + Add New Plaque
-          </Link>
+
         </div>
 
+        {entitlement ? <PlaqueAllowance entitlement={entitlement}/> : <Link href="/plaques/new" className="mt-primary-action mt-6">Add Plaque</Link>}
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
 
           {plaques?.map((plaque) => {
