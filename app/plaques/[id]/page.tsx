@@ -46,14 +46,14 @@ export default async function PlaquePage({
 
   const { data: smartPage, error: smartPageError } = await supabase
     .from("smart_pages")
-    .select("id, heading, subheading, logo_path, updated_at, theme_preset, background_color, text_color, button_color, button_text_color, button_style, button_radius")
+    .select("id, heading, subheading, logo_path, updated_at, theme_preset, background_color, text_color, button_color, button_text_color, button_style, button_radius, presentation_version, page_background_color, background_mode, gradient_end_color, gradient_direction, logo_size, content_alignment")
     .eq("plaque_id", plaque.id)
     .maybeSingle();
   if (smartPageError) throw smartPageError;
 
   const { data: buttons, error: buttonsError } = smartPage
     ? await supabase.from("smart_page_buttons")
-        .select("id, label, destination_url, enabled, position")
+        .select("id, label, destination_url, enabled, position, icon_key, image_path, updated_at")
         .eq("smart_page_id", smartPage.id)
         .order("position", { ascending: true })
         .order("id", { ascending: true })
@@ -62,7 +62,7 @@ export default async function PlaquePage({
 
   return (
     <AppShell businessName={business?.name}>
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-6xl">
 
         <Link
           href="/plaques"

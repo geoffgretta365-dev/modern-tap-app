@@ -8,6 +8,16 @@ import { formatEasternDate } from "@/lib/format-eastern-time";
 import CheckoutButton from "./checkout-button";
 import { isTerminalSubscriptionStatus } from "@/lib/stripe/subscription-status";
 
+const statusLabels: Record<string, string> = {
+  active: "Active", trialing: "Trial", past_due: "Past Due", unpaid: "Unpaid",
+  incomplete: "Setup Incomplete", incomplete_expired: "Setup Expired",
+  canceled: "Canceled", paused: "Paused",
+};
+
+function validDate(value: string | null | undefined) {
+  return value && Number.isFinite(new Date(value).getTime()) ? value : null;
+}
+
 export default async function BillingPage() {
   const supabase = await createClient();
 
@@ -25,15 +35,13 @@ export default async function BillingPage() {
     .eq("owner_id", user.id)
     .single();
 
-    const { data: subscription, error: subscriptionError } = business
-  ? await createAdminClient()
-      .from("subscriptions")
-      .select(
-  "status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, cancel_at"
-)
-      .eq("business_id", business.id)
-      .maybeSingle()
-  : { data: null, error: null };
+  const { data: subscription, error: subscriptionError } = business
+    ? await createAdminClient()
+        .from("subscriptions")
+        .select("status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, cancel_at")
+        .eq("business_id", business.id)
+        .maybeSingle()
+    : { data: null, error: null };
 
   if (subscriptionError) {
     throw subscriptionError;
@@ -61,6 +69,31 @@ export default async function BillingPage() {
       !isTerminalSubscriptionStatus(subscription.status)
   );
 
+  const statusLabel = !subscription ? "Not Started"
+    : statusLabels[subscription.status] ?? "Status Unavailable";
+  const periodEnd = validDate(subscription?.current_period_end);
+  const cancellationDate = isActiveSubscription
+    ? validDate(subscription?.cancel_at) ?? (subscription?.cancel_at_period_end ? periodEnd : null)
+    : null;
+  const statusSummary = cancellationDate
+    ? `${statusLabel} — Cancels ${formatEasternDate(cancellationDate, { month: "short", day: "numeric", year: "numeric" })}`
+    : statusLabel;
+  const billingMessage = !subscription
+    ? { heading: "Subscription setup", description: "Start your ModernTap subscription to activate recurring billing and manage payments securely through Stripe." }
+    : isActiveSubscription
+      ? { heading: "Billing is active.", description: "Your subscription is connected to Stripe. Payment methods, invoices, and subscription management are handled securely through Stripe." }
+      : subscription.status === "past_due" || subscription.status === "unpaid"
+        ? { heading: "Billing needs attention.", description: "Your subscription has a billing issue. Open the Stripe billing portal to review your payment method and account." }
+        : isTerminalSubscriptionStatus(subscription.status)
+          ? { heading: "Subscription inactive.", description: "Your previous subscription is no longer active. You can review the available subscription options below." }
+          : subscription.status === "paused"
+            ? { heading: "Subscription paused.", description: "Your subscription is paused. Open the Stripe billing portal to review your subscription settings." }
+            : subscription.status === "incomplete"
+              ? { heading: "Finish subscription setup.", description: canManageSubscription
+                  ? "Your subscription setup is incomplete. Open the Stripe billing portal to review your payment method and subscription."
+                  : "Complete Stripe checkout to finish setting up your ModernTap subscription." }
+              : { heading: "Review your subscription.", description: "Review your subscription and available billing options below." };
+
   return (
     <AppShell businessName={business.name}>
       <div className="mx-auto max-w-7xl">
@@ -75,13 +108,13 @@ export default async function BillingPage() {
           </h1>
 
           <p className="mt-2 text-slate-500">
-            Manage your ModernTap subscription and billing.
+            View your ModernTap service, subscription status, and billing options.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
 
-          <section className="mt-panel p-6">
+          <section className="mt-panel min-w-0 p-5 sm:p-6">
 
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
@@ -91,35 +124,27 @@ export default async function BillingPage() {
                 </p>
 
                 <h2 className="mt-3 text-2xl font-bold text-[#17324d]">
-                  ModernTap
+                  ModernTap Service
                 </h2>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Smart plaque management, tap tracking, and analytics.
+                  Plaque management, customer engagement analytics, Smart Pages, and ongoing account support.
                 </p>
               </div>
 
-              <span
-  className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${
-    subscription?.status === "active"
-      ? "mt-badge-teal"
-      : "bg-amber-50 text-amber-700"
-  }`}
->
-  {subscription?.status === "active"
-    ? subscription?.cancel_at
-      ? `Active — Cancels ${formatEasternDate(subscription.cancel_at, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })}`
-      : "Active"
-    : subscription?.status === "trialing"
-      ? "Trialing"
-      : "Setup Pending"}
-</span>
+              <span className={`w-fit max-w-full rounded-full px-3 py-1 text-xs font-semibold ${isActiveSubscription ? "mt-badge-teal" : "bg-amber-50 text-amber-700"}`}>
+                {statusSummary}
+              </span>
 
             </div>
+
+            <dl className="mt-6 grid gap-4 rounded-xl bg-[#f3f7f9] p-4 sm:grid-cols-2">
+              <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</dt><dd className="mt-2 text-sm font-semibold text-[#17324d]">{statusSummary}</dd></div>
+              {(cancellationDate || periodEnd) && <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{cancellationDate ? "Service Through" : "Current Period"}</dt>
+                <dd className="mt-2 text-sm text-[#17324d]">{!cancellationDate && "Through "}<time dateTime={cancellationDate ?? periodEnd!}>{formatEasternDate((cancellationDate ?? periodEnd)!, { month: "long", day: "numeric", year: "numeric" })}</time></dd>
+              </div>}
+            </dl>
 
             <div className="mt-8 border-t border-slate-100 pt-6">
 
@@ -129,12 +154,14 @@ export default async function BillingPage() {
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
 
-                <Feature text="Smart plaque management" />
-                <Feature text="Remote destination changes" />
-                <Feature text="Tap analytics" />
+                <Feature text="Plaque management" />
+                <Feature text="Remote destination updates" />
+                <Feature text="Engagement analytics" />
+                <Feature text="Smart Pages" />
+                <Feature text="Smart Page action tracking" />
+                <Feature text="Design support" />
+                <Feature text="Replacement request support" />
                 <Feature text="Customer dashboard" />
-                <Feature text="Multiple plaques" />
-                <Feature text="Performance tracking" />
 
               </div>
 
@@ -142,20 +169,18 @@ export default async function BillingPage() {
 
           </section>
 
-          <section className="mt-panel p-6">
+          <section className="mt-panel min-w-0 p-5 sm:p-6">
 
             <p className="mt-kicker">
               Billing Status
             </p>
 
             <h2 className="mt-3 text-2xl font-bold">
-              {isActiveSubscription ? "Billing is active." : "Stripe setup is next."}
+              {billingMessage.heading}
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {isActiveSubscription
-                ? "Your account is connected to Stripe. Payments, invoices, and subscription management are handled securely through Stripe."
-                : "We'll connect this account to Stripe so subscriptions, payments, invoices, and cancellations can be managed automatically."}
+              {billingMessage.description}
             </p>
 
             <div className="mt-8 rounded-xl border border-[#dbe4ea] bg-[#f3f7f9] p-4">
@@ -164,9 +189,10 @@ export default async function BillingPage() {
                 Account
               </p>
 
-              <p className="mt-2 font-semibold text-[#17324d]">
+              <p className="mt-2 break-words font-semibold text-[#17324d] [overflow-wrap:anywhere]">
                 {business.name}
               </p>
+              <p className="mt-2 text-xs text-slate-600">Subscription: {statusSummary}</p>
 
             </div>
 
@@ -174,16 +200,16 @@ export default async function BillingPage() {
 
         </div>
 
-        <section className="mt-6 mt-panel p-6">
+        <section className="mt-6 mt-panel min-w-0 p-5 sm:p-6">
 
           <h2 className="text-lg font-bold text-[#17324d]">
             Payment & Subscription
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {isActiveSubscription
-              ? "Manage your payment method, invoices, and subscription securely through Stripe."
-              : "Once Stripe is connected, customers will be able to start their subscription and securely manage their payment method, invoices, and cancellation from here."}
+            {canManageSubscription
+              ? "Manage payment methods, invoices, and subscription settings securely through Stripe."
+              : "Start or restore your ModernTap subscription securely through Stripe."}
           </p>
 
           <CheckoutButton hasSubscription={canManageSubscription} />

@@ -56,7 +56,7 @@ export default function CheckoutButton({
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-xl bg-[#17324d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244560] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16c7c0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
           ? hasSubscription
@@ -64,7 +64,7 @@ export default function CheckoutButton({
             : "Opening Checkout..."
           : hasSubscription
             ? "Manage Subscription"
-            : "Subscribe — $29.99/month"}
+            : "Start Subscription"}
       </button>
 
       {error ? (

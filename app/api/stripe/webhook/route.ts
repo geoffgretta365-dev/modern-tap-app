@@ -16,6 +16,12 @@ const supabaseAdmin = createClient(
   }
 );
 
+function stripeTimestampToIso(seconds: number | null | undefined): string | null {
+  if (seconds == null || !Number.isFinite(seconds)) return null;
+  const date = new Date(seconds * 1000);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -62,6 +68,7 @@ export async function POST(request: Request) {
     if (businessId && subscriptionId) {
       const subscription =
         await stripe.subscriptions.retrieve(subscriptionId);
+      const subscriptionItem = subscription.items.data[0];
 
       const { error } = await supabaseAdmin
         .from("subscriptions")
@@ -71,8 +78,11 @@ export async function POST(request: Request) {
             stripe_customer_id: customerId,
             stripe_subscription_id: subscription.id,
             stripe_price_id:
-              subscription.items.data[0]?.price.id ?? null,
+              subscriptionItem?.price.id ?? null,
             status: subscription.status,
+            current_period_end: stripeTimestampToIso(subscriptionItem?.current_period_end),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            cancel_at: stripeTimestampToIso(subscription.cancel_at),
             updated_at: new Date().toISOString(),
           },
           { onConflict: "business_id" }
@@ -92,34 +102,34 @@ export async function POST(request: Request) {
     }
   }
 
-if (
-  event.type === "customer.subscription.updated" ||
-  event.type === "customer.subscription.deleted"
-) {
-  const subscription = event.data.object as Stripe.Subscription;
+  if (
+    event.type === "customer.subscription.updated" ||
+    event.type === "customer.subscription.deleted"
+  ) {
+    const subscription = event.data.object as Stripe.Subscription;
+    const subscriptionItem = subscription.items.data[0];
 
-  const { error } = await supabaseAdmin
-    .from("subscriptions")
-    .update({
-  stripe_price_id: subscription.items.data[0]?.price.id ?? null,
-  status: subscription.status,
-  cancel_at_period_end: subscription.cancel_at_period_end,
-  cancel_at: subscription.cancel_at
-    ? new Date(subscription.cancel_at * 1000).toISOString()
-    : null,
-  updated_at: new Date().toISOString(),
-}) 
-    .eq("stripe_subscription_id", subscription.id);
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        stripe_price_id: subscriptionItem?.price.id ?? null,
+        status: subscription.status,
+        current_period_end: stripeTimestampToIso(subscriptionItem?.current_period_end),
+        cancel_at_period_end: subscription.cancel_at_period_end,
+        cancel_at: stripeTimestampToIso(subscription.cancel_at),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
 
-  if (error) {
-    console.error("Supabase subscription update failed:", error);
+    if (error) {
+      console.error("Supabase subscription update failed:", error);
 
-    return NextResponse.json(
-      { error: "Database update failed" },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        { error: "Database update failed" },
+        { status: 500 }
+      );
+    }
   }
-}
 
   return NextResponse.json({ received: true });
 }

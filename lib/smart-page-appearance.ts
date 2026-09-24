@@ -1,4 +1,4 @@
-export const THEME_PRESETS = ["clean", "dark", "modern", "warm", "minimal", "bold"] as const;
+export const THEME_PRESETS = ["clean", "dark", "modern", "warm", "minimal", "bold", "bistro", "espresso", "studio", "motion", "boutique", "coastal"] as const;
 export const BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export const BUTTON_RADII = ["rounded", "pill", "square"] as const;
 
@@ -60,6 +60,36 @@ export const PRESETS: Record<ThemePreset, PresetColors> = {
     pageBackground: "#172554", surfaceBackground: "#1E3A8A", borderColor: "#1D4ED8",
     textColor: "#FFFFFF", secondaryTextColor: "#DBEAFE", brandColor: "#DBEAFE", footerColor: "#DBEAFE",
     buttonColor: "#FACC15", buttonTextColor: "#172554", buttonStyle: "solid", buttonRadius: "pill",
+  },
+  bistro: {
+    pageBackground: "#F3E9DC", surfaceBackground: "#FFFCF7", borderColor: "#E7CDBF",
+    textColor: "#40251D", secondaryTextColor: "#40251D", brandColor: "#9C442B", footerColor: "#40251D",
+    buttonColor: "#9C442B", buttonTextColor: "#FFFFFF", buttonStyle: "solid", buttonRadius: "rounded",
+  },
+  espresso: {
+    pageBackground: "#EDE2D5", surfaceBackground: "#FFFBF5", borderColor: "#DDCFC1",
+    textColor: "#35251F", secondaryTextColor: "#35251F", brandColor: "#634334", footerColor: "#35251F",
+    buttonColor: "#634334", buttonTextColor: "#FFFFFF", buttonStyle: "solid", buttonRadius: "rounded",
+  },
+  studio: {
+    pageBackground: "#F7EAF0", surfaceBackground: "#FFFCFD", borderColor: "#EBD9E4",
+    textColor: "#45263C", secondaryTextColor: "#45263C", brandColor: "#743B62", footerColor: "#45263C",
+    buttonColor: "#743B62", buttonTextColor: "#45263C", buttonStyle: "soft", buttonRadius: "rounded",
+  },
+  motion: {
+    pageBackground: "#151919", surfaceBackground: "#222828", borderColor: "#3B4540",
+    textColor: "#F5FAF6", secondaryTextColor: "#F5FAF6", brandColor: "#C7F36B", footerColor: "#F5FAF6",
+    buttonColor: "#C7F36B", buttonTextColor: "#17200B", buttonStyle: "solid", buttonRadius: "rounded",
+  },
+  boutique: {
+    pageBackground: "#EDEFE8", surfaceBackground: "#FFFEFA", borderColor: "#D9E3D9",
+    textColor: "#263D30", secondaryTextColor: "#263D30", brandColor: "#315C43", footerColor: "#263D30",
+    buttonColor: "#315C43", buttonTextColor: "#263D30", buttonStyle: "outline", buttonRadius: "rounded",
+  },
+  coastal: {
+    pageBackground: "#DFEFF1", surfaceBackground: "#F9FDFD", borderColor: "#CDE2E5",
+    textColor: "#173E45", secondaryTextColor: "#173E45", brandColor: "#176471", footerColor: "#173E45",
+    buttonColor: "#176471", buttonTextColor: "#FFFFFF", buttonStyle: "solid", buttonRadius: "rounded",
   },
 };
 

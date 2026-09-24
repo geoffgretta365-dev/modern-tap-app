@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,9 +14,11 @@ export default function OnboardingForm({ userId }: Props) {
   const [businessName, setBusinessName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const submissionPending = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submissionPending.current) return;
 
     const name = businessName.trim();
 
@@ -25,26 +27,27 @@ export default function OnboardingForm({ userId }: Props) {
       return;
     }
 
+    submissionPending.current = true;
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
+      const { error: insertError } = await supabase
+        .from("businesses")
+        .insert({
+          owner_id: userId,
+          name,
+        });
 
-    const { error: insertError } = await supabase
-      .from("businesses")
-      .insert({
-        owner_id: userId,
-        name,
-      });
-
-    if (insertError) {
+      if (insertError) throw insertError;
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
       setError("Could not create your business. Please try again.");
+      submissionPending.current = false;
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -62,15 +65,18 @@ export default function OnboardingForm({ userId }: Props) {
           type="text"
           value={businessName}
           onChange={(event) => setBusinessName(event.target.value)}
-          placeholder="Example: ModernTap Coffee"
+          placeholder="Example: Lorenzo's Restaurant"
+          required
+          aria-describedby="business-name-help"
           autoComplete="organization"
           maxLength={100}
-          className="mt-2 w-full rounded-xl border border-[#dbe4ea] px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0]"
+          className="mt-2 w-full min-w-0 rounded-xl border border-[#dbe4ea] px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16c7c0] focus-visible:ring-2 focus-visible:ring-[#16c7c0]"
         />
+        <p id="business-name-help" className="mt-2 text-xs leading-5 text-slate-500">This is the business name that will appear throughout your ModernTap account.</p>
       </div>
 
       {error ? (
-        <p className="text-sm font-medium text-red-600">
+        <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm leading-5 text-red-700">
           {error}
         </p>
       ) : null}
@@ -78,10 +84,10 @@ export default function OnboardingForm({ userId }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-[#17324d] px-4 py-3 font-semibold text-white transition hover:bg-[#244560] disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-[#17324d] px-4 py-3 font-semibold text-white transition hover:bg-[#244560] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16c7c0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
-          ? "Creating business..."
+          ? "Creating Business..."
           : "Continue to Dashboard"}
       </button>
     </form>

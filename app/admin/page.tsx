@@ -22,6 +22,17 @@ type SubscriptionRow = {
   stripe_customer_id: string | null;
 };
 
+function readableLabel(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+const replacementStatusStyle: Record<string, string> = {
+  requested: "bg-amber-50 text-amber-700",
+  approved: "bg-sky-50 text-sky-700",
+  shipped: "bg-teal-50 text-teal-700",
+  delivered: "bg-emerald-50 text-emerald-700",
+};
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const supabaseAdmin = createAdminClient();
@@ -83,50 +94,63 @@ export default async function AdminPage() {
     const status = subscriptionsByBusinessId.get(business.id)?.status;
     return status === "active" || status === "trialing";
   }).length;
-  const inactiveSubscriptions = businesses.length - activeSubscriptions;
+  const billingAttention = subscriptions.filter((subscription) =>
+    ["past_due", "unpaid", "incomplete"].includes(subscription.status)
+  ).length;
 
-const { data: replacementRequests } = await supabaseAdmin
-  .from("replacement_requests")
-  .select(`
-    id,
-    reason,
-    details,
-    status,
-    shipping_name,
-    shipping_address_line1,
-    shipping_address_line2,
-    shipping_city,
-    shipping_state,
-    shipping_zip,
-    tracking_number,
-    tracking_url,
-    created_at,
-    businesses(name),
-    plaques(name)
-  `)
-  .order("created_at", { ascending: false });
-  const { data: supportTickets } = await supabaseAdmin
-  .from("support_tickets")
-  .select(`
-    id,
-    category,
-    subject,
-    message,
-    status,
-    created_at,
-    resolved_at,
-    businesses(name),
-    plaques(name)
-  `)
-  .order("created_at", { ascending: false });
+  const { data: replacementRequests, error: replacementRequestsError } = await supabaseAdmin
+    .from("replacement_requests")
+    .select(`
+      id,
+      reason,
+      details,
+      status,
+      shipping_name,
+      shipping_address_line1,
+      shipping_address_line2,
+      shipping_city,
+      shipping_state,
+      shipping_zip,
+      tracking_number,
+      tracking_url,
+      created_at,
+      businesses(name),
+      plaques(name)
+    `)
+    .order("created_at", { ascending: false });
+  if (replacementRequestsError) throw replacementRequestsError;
+
+  const { data: supportTickets, error: supportTicketsError } = await supabaseAdmin
+    .from("support_tickets")
+    .select(`
+      id,
+      category,
+      subject,
+      message,
+      status,
+      created_at,
+      resolved_at,
+      businesses(name),
+      plaques(name)
+    `)
+    .order("created_at", { ascending: false });
+  if (supportTicketsError) throw supportTicketsError;
+
   const { data: designRequests, error: designRequestsError } = await supabaseAdmin
     .from("design_change_requests")
     .select("id, notes, inspiration_url, status, created_at, businesses(name), plaques(name)")
     .order("created_at", { ascending: false });
   if (designRequestsError) throw designRequestsError;
 
+  const openReplacements = (replacementRequests ?? []).filter((request) =>
+    ["requested", "approved", "shipped"].includes(request.status)).length;
+  const openSupport = (supportTickets ?? []).filter((ticket) =>
+    ["open", "in_progress"].includes(ticket.status)).length;
+  const openDesigns = (designRequests ?? []).filter((request) =>
+    ["submitted", "reviewing", "designing", "ready"].includes(request.status)).length;
+
   return (
-    <main className="min-h-screen bg-slate-50 p-6 lg:p-10">
+    <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-10">
       <div className="mx-auto max-w-7xl">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
           ModernTap Internal
@@ -137,23 +161,39 @@ const { data: replacementRequests } = await supabaseAdmin
         </h1>
 
         <p className="mt-2 text-sm text-slate-600">
-          Track businesses, subscriptions, support, and replacement requests.
+          Manage customers, subscriptions, support requests, design changes, and replacements.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <OverviewCard title="Total Businesses" value={businesses.length} />
-          <OverviewCard title="Active Subscriptions" value={activeSubscriptions} />
-          <OverviewCard title="Inactive / Past Due" value={inactiveSubscriptions} />
+          <OverviewCard title="Active Subscriptions" value={activeSubscriptions} detail="Active and trial subscriptions" />
+          <OverviewCard title="Billing Attention" value={billingAttention} detail="Past due, unpaid, or incomplete" />
           <OverviewCard title="Total Plaques" value={totalPlaques ?? 0} />
         </div>
 
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5" aria-labelledby="operations-heading">
+          <h2 id="operations-heading" className="text-lg font-semibold text-slate-900">Operations</h2>
+          <p className="mt-1 text-xs text-slate-500">Unfinished work in the queues loaded below.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Open Replacement Requests", count: openReplacements, href: "#replacement-requests", detail: "Requested, approved, or shipped" },
+              { label: "Open Support Tickets", count: openSupport, href: "#support-tickets", detail: "Open or in progress" },
+              { label: "Open Design Requests", count: openDesigns, href: "#design-requests", detail: "Submitted, reviewing, designing, or ready" },
+            ].map((queue) => <a key={queue.href} href={queue.href} className="min-w-0 rounded-xl bg-slate-50 p-4 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16c7c0]">
+              <p className="text-sm font-medium text-slate-700">{queue.label}</p>
+              <p className="mt-2 text-2xl font-bold text-slate-900">{queue.count.toLocaleString("en-US")}</p>
+              <p className="mt-1 text-xs text-slate-500">{queue.detail}</p>
+            </a>)}
+          </div>
+        </section>
+
+        <section className="mt-8 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
               Businesses &amp; Subscriptions
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track every ModernTap customer and their subscription from one place.
+              Manage ModernTap customers and subscription status.
             </p>
           </div>
 
@@ -171,209 +211,217 @@ const { data: replacementRequests } = await supabaseAdmin
           />
         </section>
 
-<section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-  <div className="flex items-center justify-between gap-4">
-    <div>
-      <h2 className="text-lg font-semibold text-slate-900">
-        Replacement Requests
-      </h2>
+        <section id="replacement-requests" className="mt-8 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Replacement Requests
+              </h2>
 
-      <p className="mt-1 text-sm text-slate-500">
-        Review customer replacement requests and shipping information.
-      </p>
-    </div>
-
-    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-      {replacementRequests?.length ?? 0} total
-    </span>
-  </div>
-
-  {!replacementRequests?.length ? (
-    <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
-      No replacement requests yet.
-    </div>
-  ) : (
-    <div className="mt-6 space-y-4">
-      {replacementRequests.map((request) => {
-        const business = Array.isArray(request.businesses)
-          ? request.businesses[0]
-          : request.businesses;
-
-        const plaque = Array.isArray(request.plaques)
-          ? request.plaques[0]
-          : request.plaques;
-
-        return (
-          <div
-            key={request.id}
-            className="rounded-xl border border-slate-200 p-5"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-semibold text-slate-900">
-                  {business?.name ?? "Unknown business"}
-                </p>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  {plaque?.name ?? "Unknown plaque"} · {request.reason}
-                </p>
-              </div>
-
-              <span className="w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold capitalize text-amber-700">
-                {request.status.replaceAll("_", " ")}
-              </span>
-            </div>
-
-            {request.details ? (
-              <p className="mt-4 text-sm text-slate-600">
-                {request.details}
-              </p>
-            ) : null}
-
-            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-semibold text-slate-900">
-                Ship to
-              </p>
-
-              <p className="mt-1">{request.shipping_name}</p>
-              <p>{request.shipping_address_line1}</p>
-
-              {request.shipping_address_line2 ? (
-                <p>{request.shipping_address_line2}</p>
-              ) : null}
-
-              <p>
-                {request.shipping_city}, {request.shipping_state}{" "}
-                {request.shipping_zip}
+              <p className="mt-1 text-sm text-slate-500">
+                Review customer replacement requests and shipping information.
               </p>
             </div>
 
-            <p className="mt-4 text-xs text-slate-400">
-              Submitted{" "}
-              {formatEasternDateTime(request.created_at)}
-            </p>
-            <ReplacementActions
-  requestId={request.id}
-  currentStatus={request.status}
-  currentTrackingNumber={request.tracking_number}
-  currentTrackingUrl={request.tracking_url}
-/>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              {replacementRequests?.length ?? 0} total
+            </span>
           </div>
-        );
-      })}
-    </div>
-  )}
-</section>
-<section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-  <div className="flex items-center justify-between gap-4">
-    <div>
-      <h2 className="text-lg font-semibold text-slate-900">
-        Support Tickets
-      </h2>
 
-      <p className="mt-1 text-sm text-slate-500">
-        Review support requests submitted by ModernTap customers.
-      </p>
-    </div>
+          {!replacementRequests?.length ? (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+              No replacement requests yet.
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {replacementRequests.map((request) => {
+                const business = Array.isArray(request.businesses)
+                  ? request.businesses[0]
+                  : request.businesses;
 
-    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-      {supportTickets?.length ?? 0} total
-    </span>
-  </div>
+                const plaque = Array.isArray(request.plaques)
+                  ? request.plaques[0]
+                  : request.plaques;
 
-  {!supportTickets?.length ? (
-    <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
-      No support tickets yet.
-    </div>
-  ) : (
-    <div className="mt-6 space-y-4">
-      {supportTickets.map((ticket) => {
-        const business = Array.isArray(ticket.businesses)
-          ? ticket.businesses[0]
-          : ticket.businesses;
+                return (
+                  <div
+                    key={request.id}
+                    className="min-w-0 rounded-xl border border-slate-200 p-4 [overflow-wrap:anywhere] sm:p-5"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {business?.name ?? "Unknown business"}
+                        </p>
 
-        const plaque = Array.isArray(ticket.plaques)
-          ? ticket.plaques[0]
-          : ticket.plaques;
+                        <p className="mt-1 text-sm text-slate-500">
+                          {plaque?.name ?? "Unknown plaque"} · {readableLabel(request.reason)}
+                        </p>
+                      </div>
 
-        return (
-          <div
-            key={ticket.id}
-            className="rounded-xl border border-slate-200 p-5"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-semibold text-slate-900">
-                  {ticket.subject}
-                </p>
+                      <span className={`w-fit max-w-full shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${replacementStatusStyle[request.status] ?? "bg-slate-100 text-slate-700"}`}>
+                        {readableLabel(request.status)}
+                      </span>
+                    </div>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  {business?.name ?? "Unknown business"} ·{" "}
-                  {ticket.category}
-                </p>
+                    {request.details ? (
+                      <p className="mt-4 whitespace-pre-wrap break-words text-sm text-slate-600">
+                        {request.details}
+                      </p>
+                    ) : null}
 
-                {plaque?.name ? (
-                  <p className="mt-1 text-xs text-slate-400">
-                    Plaque: {plaque.name}
-                  </p>
-                ) : null}
-              </div>
+                    <div className="mt-4 whitespace-pre-wrap break-words rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                      <p className="font-semibold text-slate-900">
+                        Ship to
+                      </p>
 
-              <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
-                {ticket.status.replaceAll("_", " ")}
-              </span>
+                      <p className="mt-1">{request.shipping_name}</p>
+                      <p>{request.shipping_address_line1}</p>
+
+                      {request.shipping_address_line2 ? (
+                        <p>{request.shipping_address_line2}</p>
+                      ) : null}
+
+                      <p>
+                        {request.shipping_city}, {request.shipping_state}{" "}
+                        {request.shipping_zip}
+                      </p>
+                    </div>
+
+                    <p className="mt-4 text-xs text-slate-400">
+                      Submitted{" "}
+                      {formatEasternDateTime(request.created_at)}
+                    </p>
+                    <ReplacementActions
+                      requestId={request.id}
+                      currentStatus={request.status}
+                      currentTrackingNumber={request.tracking_number}
+                      currentTrackingUrl={request.tracking_url}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <section id="support-tickets" className="mt-8 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Support Tickets
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Review support requests submitted by ModernTap customers.
+              </p>
             </div>
 
-            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-              {ticket.message}
-            </div>
-
-            <p className="mt-4 text-xs text-slate-400">
-              Submitted{" "}
-              {formatEasternDateTime(ticket.created_at)}
-            </p>
-            <SupportActions
-  ticketId={ticket.id}
-  currentStatus={ticket.status}
-/>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              {supportTickets?.length ?? 0} total
+            </span>
           </div>
-        );
-      })}
-    </div>
-  )}
-</section>
-<section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-  <h2 className="text-lg font-semibold text-slate-900">Design Requests</h2>
-  <p className="mt-1 text-sm text-slate-500">Manage customer requests for new plaque designs.</p>
-  {!designRequests?.length ? <p className="mt-6 text-sm text-slate-500">No design requests yet.</p> :
-    <div className="mt-6 space-y-4">{designRequests.map((item) => {
-      const business = Array.isArray(item.businesses) ? item.businesses[0] : item.businesses;
-      const plaque = Array.isArray(item.plaques) ? item.plaques[0] : item.plaques;
-      return <article key={item.id} className="rounded-xl border border-slate-200 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><p className="font-semibold text-slate-900">{business?.name ?? "Unknown business"}</p>
-            <p className="mt-1 text-sm text-slate-600">Plaque: {plaque?.name ?? "Unknown plaque"}</p></div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{item.status}</span>
-        </div>
-        <p className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">{item.notes}</p>
-        {item.inspiration_url && <a href={item.inspiration_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block break-all text-sm text-teal-700 underline">Reference ↗</a>}
-        <p className="mt-3 text-xs text-slate-500">Submitted {formatEasternDateTime(item.created_at)}</p>
-        <DesignRequestActions requestId={item.id} status={item.status} />
-      </article>;
-    })}</div>}
-</section>
+
+          {!supportTickets?.length ? (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+              No support tickets yet.
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {supportTickets.map((ticket) => {
+                const business = Array.isArray(ticket.businesses)
+                  ? ticket.businesses[0]
+                  : ticket.businesses;
+
+                const plaque = Array.isArray(ticket.plaques)
+                  ? ticket.plaques[0]
+                  : ticket.plaques;
+
+                return (
+                  <div
+                    key={ticket.id}
+                    className="min-w-0 rounded-xl border border-slate-200 p-4 [overflow-wrap:anywhere] sm:p-5"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {ticket.subject}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {business?.name ?? "Unknown business"} ·{" "}
+                          {readableLabel(ticket.category)}
+                        </p>
+
+                        {plaque?.name ? (
+                          <p className="mt-1 text-xs text-slate-400">
+                            Plaque: {plaque.name}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                        {readableLabel(ticket.status)}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 whitespace-pre-wrap break-words rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                      {ticket.message}
+                    </div>
+
+                    <p className="mt-4 text-xs text-slate-400">
+                      Submitted{" "}
+                      {formatEasternDateTime(ticket.created_at)}
+                    </p>
+                    {ticket.status === "resolved" && ticket.resolved_at && <p className="mt-2 text-xs text-slate-500">Resolved {formatEasternDateTime(ticket.resolved_at)}</p>}
+                    <SupportActions
+                      ticketId={ticket.id}
+                      currentStatus={ticket.status}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <section id="design-requests" className="mt-8 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Design Requests</h2>
+              <p className="mt-1 text-sm text-slate-500">Review and manage customer design change requests.</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{designRequests?.length ?? 0} total</span>
+          </div>
+          {!designRequests?.length ? <p className="mt-6 text-sm text-slate-500">No design requests yet.</p> :
+            <div className="mt-6 space-y-4">{designRequests.map((item) => {
+              const business = Array.isArray(item.businesses) ? item.businesses[0] : item.businesses;
+              const plaque = Array.isArray(item.plaques) ? item.plaques[0] : item.plaques;
+              return <article key={item.id} className="min-w-0 rounded-xl border border-slate-200 p-4 [overflow-wrap:anywhere] sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><p className="font-semibold text-slate-900">{business?.name ?? "Unknown business"}</p>
+                    <p className="mt-1 text-sm text-slate-600">Plaque: {plaque?.name ?? "Unknown plaque"}</p></div>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{readableLabel(item.status)}</span>
+                </div>
+                <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Requested Changes</h3>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-700">{item.notes}</p>
+                {item.inspiration_url && <a href={item.inspiration_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block break-all text-sm text-teal-700 underline">View Reference ↗</a>}
+                <p className="mt-3 text-xs text-slate-500">Submitted {formatEasternDateTime(item.created_at)}</p>
+                <DesignRequestActions requestId={item.id} status={item.status} />
+              </article>;
+            })}</div>}
+        </section>
       </div>
     </main>
   );
 }
 
-function OverviewCard({ title, value }: { title: string; value: number }) {
+function OverviewCard({ title, value, detail }: { title: string; value: number; detail?: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-medium text-slate-500">{title}</p>
       <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
         {value.toLocaleString("en-US")}
       </p>
+      {detail && <p className="mt-2 text-xs text-slate-500">{detail}</p>}
     </div>
   );
 }
