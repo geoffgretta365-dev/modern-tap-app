@@ -122,3 +122,11 @@ test('activation requires persisted active/trialing state and a Stripe subscript
 test('activation endpoint rejects unauthenticated and missing-business requests',async()=>{
   for(const [options,status] of [[{unauth:true},401],[{noBusiness:true},404],[{dbError:true},500]]){const h=setup(options);assert.equal((await h.load('app/api/billing/status/route.ts').GET()).status,status);}
 });
+
+test('Google Review physical benefit matches all five catalog plans and rendered summaries',async()=>{
+  const h=setup();const {getPlan,googleReviewBenefit}=h.load('lib/plans/catalog.ts');
+  for(const [key,count,text] of [['starter',0,'available as an add-on'],['growth',1,'1 Google Review plaque included'],['pro',1,'1 Google Review plaque included'],['business',2,'2 Google Review plaques included'],['custom',null,'custom quantity']]){
+    const plan=getPlan(key);assert.equal(plan.googleReviewPlaques,count);assert.ok(googleReviewBenefit(plan).includes(text));
+    const html=renderToStaticMarkup(React.createElement(h.load('components/plans/plan-summary.tsx').default,{plan}));assert.ok(html.includes(text));assert.doesNotMatch(html,/QR card|unlimited replacement/i);
+  }
+});

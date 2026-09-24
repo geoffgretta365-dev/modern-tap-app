@@ -237,8 +237,10 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
       <button type="button" className="mt-secondary-action mt-5 xl:hidden" aria-expanded={showPreview} aria-controls="smart-page-preview" onClick={() => setShowPreview(value => !value)}>{showPreview ? "Hide Preview" : "Show Preview"}</button>
       <div className="mt-6 grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_350px]">
       <div className="min-w-0">
+      <AppearanceEditor draft={appearance} onChange={patch => { setAppearance(current => ({ ...current, ...patch })); setAppearanceMessage(""); }}
+        onSave={saveAppearance} onReset={() => { setAppearance(normalizePresentation(page ?? {})); setAppearanceMessage(""); }} saving={appearanceBusy} message={appearanceMessage} />
       <section className="mt-7 rounded-xl border border-[#dbe4ea] p-4 sm:p-5" aria-labelledby="branding-heading">
-        <h3 id="branding-heading" className="text-lg font-bold text-[#17324d]">Branding</h3>
+        <h3 id="branding-heading" className="text-lg font-bold text-[#17324d]">Brand</h3>
         <p className="mt-1 text-sm text-slate-500">Add your business logo to personalize the Smart Page.</p>
         <p id="logo-guidance" className="mt-2 text-xs text-slate-500">PNG, JPEG, or WebP. Maximum 4 MB.</p>
         {logoPresent && <p className="mt-2 text-sm text-slate-700">Your business logo is currently displayed on the Smart Page.</p>}
@@ -250,7 +252,14 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
           {logoPresent && <button type="button" disabled={logoBusy} onClick={() => changeLogo("DELETE")} className="mt-secondary-action disabled:opacity-50">Remove Logo</button>}
         </div>
         {logoMessage && <p role="status" className="mt-3 text-sm text-slate-600">{logoMessage}</p>}
-        <h4 id="page-content-heading" className="mt-6 text-sm font-bold text-[#17324d]">Page Content</h4>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">Logo size<select value={appearance.logo_size ?? "medium"} onChange={e => setAppearance(current => ({ ...current, presentation_version: 2, logo_size: e.target.value as Layout["logo_size"] }))} className="mt-1 block w-full rounded border p-2"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
+          <label className="text-sm">Content alignment<select value={appearance.content_alignment ?? "center"} onChange={e => setAppearance(current => ({ ...current, presentation_version: 2, content_alignment: e.target.value as Layout["content_alignment"] }))} className="mt-1 block w-full rounded border p-2"><option value="center">Center</option><option value="left">Left</option></select></label>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">Size and alignment preview the V2 layout. Publish them with Save V2 Appearance in Design. Logo uploads and removals publish immediately.</p>
+      </section>
+      <section className="mt-6 rounded-xl border border-[#dbe4ea] p-4 sm:p-5" aria-labelledby="page-content-heading">
+        <h3 id="page-content-heading" className="text-lg font-bold text-[#17324d]">Content</h3>
         <p className="mt-1 text-sm text-slate-500">Add a short message customers will see when they open your Smart Page.</p>
         <div className="mt-5 grid gap-4">
           <label className="min-w-0 text-sm font-medium text-slate-700">Page Heading <span className="font-normal text-slate-500">(optional)</span>
@@ -266,19 +275,14 @@ export default function SmartPageEditor({ plaqueId, plaqueCode, initialMode, pag
           <button type="button" disabled={busy} onClick={() => act({ action: "save_page", heading, subheading })} className="mt-primary-action disabled:opacity-50">Save Page Content</button>
           <p className="text-xs text-slate-500">Save your changes to update the live Smart Page.</p>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">Logo size<select value={appearance.logo_size ?? "medium"} onChange={e => setAppearance(current => ({ ...current, presentation_version: 2, logo_size: e.target.value as Layout["logo_size"] }))} className="mt-1 block w-full rounded border p-2"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
-          <label className="text-sm">Content alignment<select value={appearance.content_alignment ?? "center"} onChange={e => setAppearance(current => ({ ...current, presentation_version: 2, content_alignment: e.target.value as Layout["content_alignment"] }))} className="mt-1 block w-full rounded border p-2"><option value="center">Center</option><option value="left">Left</option></select></label>
-        </div>
-        <p className="mt-2 text-xs text-slate-500">Size and alignment preview the V2 layout. Publish them with Save V2 Appearance below. Logo uploads and removals publish immediately.</p>
+
       </section>
 
-      <AppearanceEditor draft={appearance} onChange={patch => { setAppearance(current => ({ ...current, ...patch })); setAppearanceMessage(""); }}
-        onSave={saveAppearance} onReset={() => { setAppearance(normalizePresentation(page ?? {})); setAppearanceMessage(""); }} saving={appearanceBusy} message={appearanceMessage} />
+
 
       <section className="mt-8 min-w-0 border-t border-slate-200 pt-7" aria-labelledby="customer-actions-heading">
-        <h3 id="customer-actions-heading" className="text-lg font-bold text-[#17324d]">Customer Actions</h3>
-        <p className="mt-1 text-sm text-slate-500">Add the actions you want customers to take from your Smart Page.</p>
+        <h3 id="customer-actions-heading" className="text-lg font-bold text-[#17324d]">Actions</h3>
+        <p className="mt-1 text-sm text-slate-500">Add the actions you want customers to take. In V2, your first action gets a little extra emphasis.</p>
         <p className="mt-2 text-xs leading-5 text-slate-500">Examples: View Menu, Leave a Review, Order Online, Follow on Instagram, Book Appointment, or Visit Website.</p>
         <div className="mt-4 space-y-3">{buttons.map((button, index) => <ButtonRow key={button.id} plaqueId={plaqueId} button={button} first={index === 0} last={index === buttons.length - 1} onDraftChange={onButtonDraftChange} />)}</div>
         <div className="mt-6 rounded-xl border border-[#dbe4ea] p-4 sm:p-5">

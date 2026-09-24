@@ -1,3 +1,4 @@
+import ReviewPlaqueBenefit from "@/components/plans/review-plaque-benefit";
 import { plaqueEntitlementsEnabled } from "@/lib/plans/entitlements-enabled";
 export const instant = false;
 
@@ -165,6 +166,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
             </div>
 
+            {currentPlan && <ReviewPlaqueBenefit plan={currentPlan}/>}
             {currentPrice?.interval && <p className="mt-4 text-xl font-semibold text-[#17324d]">{currentPrice.label}<span className="mt-1 block text-xs font-normal text-slate-500">Base price. Discounts, quantities, and taxes may change your invoice total.</span></p>}
             <dl className="mt-6 grid gap-4 rounded-xl bg-[#f3f7f9] p-4 sm:grid-cols-2">
               <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</dt><dd className="mt-2 text-sm font-semibold text-[#17324d]">{statusSummary}</dd></div>

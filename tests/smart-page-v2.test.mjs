@@ -115,3 +115,24 @@ test('V2 save still requires authenticated ownership',async () => {
     assert.equal(result.response.status,status);assert.ok(!result.calls.some(c=>c.op==='update'));
   }
 });
+
+test('V2 design systems differ beyond palette and retain overrides plus tracked actions',()=>{
+  const {contrastRatio}=h.load('lib/smart-page-appearance.ts');
+  const designs=[];
+  for(const theme of ['bistro','espresso','studio','boutique','coastal','modern','bold']){
+    const p=resolvePresentation({presentation_version:2,theme_preset:theme});designs.push(p.design);
+    assert.ok(contrastRatio(p.textColor,p.surfaceBackground)>=4.5);
+    assert.ok(contrastRatio(p.buttonTextColor,p.buttonStyle==='outline'?p.surfaceBackground:p.buttonBackground)>=4.5);
+    assert.match(render({presentation_version:2,theme_preset:theme}),/href="\/s\/code\/go\/unchanged-id"/);
+    const custom=resolvePresentation({presentation_version:2,theme_preset:theme,content_alignment:'left',logo_size:'large',button_radius:'pill',button_style:'outline',background_color:'#FFFFFF',text_color:'#111111'});
+    assert.equal(custom.alignment,'left');assert.equal(custom.logoSize,'large');assert.equal(custom.buttonRadius,'pill');assert.equal(custom.surfaceBackground,'#FFFFFF');
+  }
+  assert.equal(new Set(designs.map(d=>d.surfaceClass)).size,7);
+  assert.ok(new Set(designs.map(d=>d.font)).size>1);
+});
+test('demo interactions use buttons only, normal preview is inert, public still uses tracked links',()=>{
+  const input={presentation_version:2,theme_preset:'bistro'};
+  assert.doesNotMatch(render(input,{preview:true}),/<a |<button/);
+  const demo=render(input,{preview:true,onDemoAction:()=>{}});assert.match(demo,/<button type="button"/);assert.doesNotMatch(demo,/<a /);
+  assert.match(render(input),/href="\/s\/code\/go\/unchanged-id"/);
+});

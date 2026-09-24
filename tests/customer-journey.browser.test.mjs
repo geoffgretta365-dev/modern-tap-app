@@ -9,7 +9,7 @@ const dependency=createRequire(import.meta.url);
 const {webpack}=dependency('next/dist/compiled/webpack/webpack');
 const chrome=process.env.CHROME_BIN||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
-test('tour stays local through all four steps; activation polling stops and waits for confirmation', {skip:!fs.existsSync(chrome),timeout:60000},async()=>{
+test('tour story and shared designs stay local; activation polling stops and waits for confirmation', {skip:!fs.existsSync(chrome),timeout:60000},async()=>{
   const root=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'moderntap-journey-'));let browser;
   try {
     fs.writeFileSync(path.join(temp,'loader.cjs'),`const ts=require(${JSON.stringify(dependency.resolve('typescript'))});module.exports=function(source){return ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText;};`);
@@ -26,7 +26,7 @@ test('tour stays local through all four steps; activation polling stops and wait
     `);
     await new Promise((resolve,reject)=>webpack({mode:'development',devtool:false,target:'web',entry:path.join(temp,'entry.tsx'),output:{path:temp,filename:'bundle.js'},resolve:{alias:{'@':root},extensions:['.tsx','.ts','.js'],modules:[path.join(root,'node_modules')]},module:{rules:[{test:/\.tsx?$/,exclude:/node_modules/,use:path.join(temp,'loader.cjs')}]},plugins:[new webpack.DefinePlugin({'process.env':JSON.stringify({NODE_ENV:'development'})})]},(error,stats)=>error||stats.hasErrors()?reject(error||new Error(stats.toString({all:false,errors:true}))):resolve()));
     const cssDir=path.join(root,'.next/static/css');const css=fs.existsSync(cssDir)?fs.readdirSync(cssDir).filter(x=>x.endsWith('.css')).map(x=>fs.readFileSync(path.join(cssDir,x),'utf8')).join('\n'):'';
-    fs.writeFileSync(path.join(temp,'index.html'),`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><div id="root"></div><script src="./bundle.js"></script></body></html>`);
+    fs.writeFileSync(path.join(temp,'index.html'),`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><div id="root"></div><script src="./bundle.js"></script></body></html>`);
     browser=spawn(chrome,['--headless','--no-first-run','--disable-gpu','--disable-background-networking','--remote-debugging-pipe',`--user-data-dir=${path.join(temp,'profile')}`],{stdio:['ignore','ignore','ignore','pipe','pipe']});
     let id=0,buffer='',browserError;const pending=new Map(),errors=[];
     const fail=error=>{browserError=error;for(const [,reject]of pending.values())reject(error);pending.clear();};
@@ -39,18 +39,32 @@ test('tour stays local through all four steps; activation polling stops and wait
     const click=text=>evaluate(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent===${JSON.stringify(text)}).click()`);
     await call('Runtime.enable',{},sessionId);await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true},sessionId);
     await call('Page.navigate',{url:`file://${path.join(temp,'index.html')}`},sessionId);
-    await wait("document.querySelector('h1')?.textContent==='Dashboard'");
+    await wait("document.querySelector('h1')?.textContent==='One tap. Everything they need.'");
     assert.equal(await evaluate("Array.from(document.querySelectorAll('a')).find(a=>a.textContent==='Skip Tour').getAttribute('href')"),'/billing');
-    await click('Recent Activity');await wait("document.body.textContent.includes('minutes ago')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Plaques'");
-    await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Patio Table')).click()");
-    assert.equal(await evaluate("document.querySelector('#demo-destination').value"),'example.com/cedar-stone/patio');
-    await click('Try Update');await wait("document.body.textContent.includes('Demo destination updated')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Analytics'");
+    await click('Tap the demo plaque');await wait("document.querySelector('[data-smart-page-design]')!==null");
+    await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('View Our Menu')).click()");
+    await wait("document.body.textContent.includes('No website opened or activity recorded')");
+    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Change where your plaques lead anytime.'");
+    await evaluate(`{const sel=document.querySelector('select[aria-label="Demo destination"]');sel.value='Seasonal menu';sel.dispatchEvent(new Event('change',{bubbles:true}));}`);
+    await wait("document.body.textContent.includes('Demo destination updated')");
+    await click('Next →');await wait("document.querySelector('h1')?.textContent==='See how customers interact.'");
     await click('Last 14 Days');await wait("document.body.textContent.includes('560')");
     await click('Last 7 Days');await wait("document.body.textContent.includes('280')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Smart Page'");
-    await click('View Our Menu');await wait("document.body.textContent.includes('No website opened or activity recorded')");
+    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Make every tap feel like your brand.'");
+    for(const theme of ['espresso','studio','boutique','coastal','modern','bold','bistro']){
+      await evaluate(`{const el=document.querySelector('select[aria-label="Demo design"]');el.value=${JSON.stringify(theme)};el.dispatchEvent(new Event('change',{bubbles:true}));}`);
+      await wait(`document.querySelector('[data-smart-page-design]')?.dataset.smartPageDesign===${JSON.stringify(theme)}`);
+      assert.ok(await evaluate("parseFloat(getComputedStyle(document.querySelector('[data-smart-page-design] h1')).fontSize)>=30"), theme+' heading typography');
+      for(const width of [320,390,412,1280]){
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<500},sessionId);
+        assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth'),true,theme+' width '+width);
+        if(process.env.MODERNTAP_SCREENSHOT_DIR && width===390 && ['bistro','espresso'].includes(theme)){fs.mkdirSync(process.env.MODERNTAP_SCREENSHOT_DIR,{recursive:true});const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:true},sessionId);fs.writeFileSync(path.join(process.env.MODERNTAP_SCREENSHOT_DIR,theme+'.png'),Buffer.from(shot.data,'base64'));}
+      }
+    }
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]},sessionId);
+    await evaluate("document.querySelector('input[type=checkbox]').click()");
+    await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('View Our Menu')).click()");await wait("document.body.textContent.includes('No website opened or activity recorded')");
+    await click('Finish Tour');await wait("document.querySelector('h1')?.textContent.includes('ready to use ModernTap')");
     assert.equal(await evaluate("Array.from(document.querySelectorAll('a')).find(a=>a.textContent==='Choose Your Plan').getAttribute('href')"),'/billing');
     assert.equal(await evaluate("document.querySelectorAll('a[href*="+JSON.stringify('/t/')+"], a[href*="+JSON.stringify('/go/')+"]').length"),0);
     assert.deepEqual(await evaluate('window.requests'),[]);

@@ -1,3 +1,4 @@
+import { SMART_PAGE_DESIGNS } from "./smart-page-designs";
 import { normalizeAppearance, resolveAppearance, isHexColor, contrastRatio, type SmartPageAppearance } from "@/lib/smart-page-appearance";
 
 export const V2_OPTIONS = {
@@ -55,6 +56,7 @@ export function resolvePresentation(input: PresentationSource) {
   const footerColor = v2 && contrastRatio(appearance.footerColor, appearance.surfaceBackground) < 4.5
     ? appearance.secondaryTextColor : appearance.footerColor;
   return { ...appearance, ...normalized, pageBackground, backgroundImage, footerColor, v2,
+    design: SMART_PAGE_DESIGNS[normalized.theme_preset],
     logoSize: normalized.logo_size ?? "medium", alignment: normalized.content_alignment ?? "center" };
 }
 export type ResolvedPresentation = ReturnType<typeof resolvePresentation>;

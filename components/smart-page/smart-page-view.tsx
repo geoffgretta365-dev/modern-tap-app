@@ -4,21 +4,23 @@ import type { PageAction, ResolvedPresentation } from "@/lib/smart-page-presenta
 
 export type SmartPageViewProps = {
   heading: string; subheading: string; logoSrc?: string | null;
-  appearance: ResolvedPresentation; actions: PageAction[]; preview?: boolean;
+  appearance: ResolvedPresentation; actions: PageAction[]; preview?: boolean; onDemoAction?: (id: string) => void;
 };
-export default function SmartPageView({ heading, subheading, logoSrc, appearance, actions, preview = false }: SmartPageViewProps) {
+export default function SmartPageView({ heading, subheading, logoSrc, appearance, actions, preview = false, onDemoAction }: SmartPageViewProps) {
   const customStyle = !appearance.legacyClean;
-  if (appearance.v2) return <main className="flex min-h-full w-full min-w-0 items-center justify-center px-4 py-10 text-base"
+  if (appearance.v2) return <main data-smart-page-design={appearance.theme_preset} className="flex min-h-full w-full min-w-0 items-start justify-center px-4 py-6 text-base sm:py-10"
     style={{ minHeight: preview ? 580 : "100svh", backgroundColor: appearance.pageBackground, backgroundImage: appearance.backgroundImage, color: appearance.textColor }}>
-    <div className="w-full min-w-0 max-w-md rounded-[28px] border px-6 py-8 shadow-[0_16px_60px_-28px_rgba(15,23,42,0.3)]"
+    <div className={`w-full min-w-0 max-w-md ${appearance.design.surfaceClass}`}
       style={{ backgroundColor: appearance.surfaceBackground, borderColor: appearance.borderColor, textAlign: appearance.alignment }}>
-      {logoSrc && <SmartPageLogo key={logoSrc} src={logoSrc} size={appearance.logoSize} alignment={appearance.alignment} />}
-      {heading && <h1 className="text-[28px] font-bold leading-tight tracking-tight [overflow-wrap:anywhere]">{heading}</h1>}
-      {subheading && <p className={`${heading ? "mt-3" : ""} text-[15px] leading-7 [overflow-wrap:anywhere]`} style={{ color: appearance.secondaryTextColor }}>{subheading}</p>}
-      <div className={`${heading || subheading || logoSrc ? "mt-8" : ""} space-y-3`}>
-        {actions.map(action => <SmartPageAction key={action.id} action={action} appearance={appearance} preview={preview} />)}
+      <header className={appearance.design.headerClass} style={{ borderColor: appearance.borderColor }}>
+        {logoSrc && <SmartPageLogo key={logoSrc} src={logoSrc} size={appearance.logoSize} alignment={appearance.alignment} treatment={appearance.design.logoTreatment}/>}
+        {heading && <h1 className={`${appearance.design.headingClass} leading-[1.12] [overflow-wrap:anywhere]`} style={{ fontFamily: appearance.design.font }}>{heading}</h1>}
+        {subheading && <p className={`${heading ? "mt-4" : ""} text-[15px] leading-[1.7] [overflow-wrap:anywhere]`} style={{ color: appearance.secondaryTextColor }}>{subheading}</p>}
+      </header>
+      <div className={`${heading || subheading || logoSrc ? "mt-6" : ""} space-y-3`}>
+        {actions.map((action, index) => <SmartPageAction key={action.id} action={action} appearance={appearance} preview={preview} onDemoAction={onDemoAction} primary={index === 0}/>)}
       </div>
-      <p className="mt-8 text-center text-xs leading-5" style={{ color: appearance.footerColor }}>Powered by ModernTap</p>
+      <footer className="mt-7 flex items-center justify-center gap-2 text-[11px] leading-5 tracking-wide" style={{ color: appearance.footerColor }}><span aria-hidden="true">↗</span> Powered by ModernTap</footer>
     </div>
   </main>;
   return (

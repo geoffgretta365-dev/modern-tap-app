@@ -93,6 +93,24 @@ export const PRESETS: Record<ThemePreset, PresetColors> = {
   },
 };
 
+// V2-only palette refinements. V1 uses PRESETS unchanged.
+export const V2_PRESETS: Record<ThemePreset, PresetColors> = {
+  ...PRESETS,
+  espresso: { ...PRESETS.espresso, pageBackground: "#191512", surfaceBackground: "#29211D", borderColor: "#695347",
+    textColor: "#FFF8EF", secondaryTextColor: "#E1D0C1", brandColor: "#EDD2AF", footerColor: "#E1D0C1",
+    buttonColor: "#EBD5B7", buttonTextColor: "#29211D", buttonRadius: "square" },
+  studio: { ...PRESETS.studio, pageBackground: "#EDECF4", surfaceBackground: "#FFFFFF", borderColor: "#D1CBDF",
+    textColor: "#211B32", secondaryTextColor: "#514563", buttonColor: "#533D78", buttonTextColor: "#FFFFFF", buttonStyle: "solid", buttonRadius: "square" },
+  bistro: { ...PRESETS.bistro, buttonRadius: "square" },
+  boutique: { ...PRESETS.boutique, buttonRadius: "square" },
+  coastal: { ...PRESETS.coastal, buttonStyle: "outline", buttonTextColor: "#173E45", buttonRadius: "pill" },
+  modern: { ...PRESETS.modern, pageBackground: "#EDEFF2", surfaceBackground: "#FFFFFF", borderColor: "#D3D9DF",
+    textColor: "#172B3A", secondaryTextColor: "#425766", buttonColor: "#213E51", buttonTextColor: "#FFFFFF", buttonRadius: "square" },
+};
+export function presentationPresets(input: { presentation_version?: unknown }) {
+  return input.presentation_version === 2 ? V2_PRESETS : PRESETS;
+}
+
 export function isThemePreset(value: unknown): value is ThemePreset {
   return typeof value === "string" && (THEME_PRESETS as readonly string[]).includes(value);
 }
@@ -133,10 +151,10 @@ function blend(first: string, second: string, weight: number) {
   return `#${values.map((value) => value.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
 }
 
-export function resolveAppearance(input: Partial<Record<keyof SmartPageAppearance, unknown>>) {
+export function resolveAppearance(input: Partial<Record<keyof SmartPageAppearance, unknown>> & { presentation_version?: unknown }) {
   const presetValid = isThemePreset(input.theme_preset);
   const presetName = presetValid ? input.theme_preset as ThemePreset : "clean";
-  const preset = PRESETS[presetName];
+  const preset = presentationPresets(input)[presetName];
   const overrides = presetValid ? input : {};
   const background = isHexColor(overrides.background_color) ? overrides.background_color.toUpperCase() : null;
   const pageBackground = background ?? preset.pageBackground;
@@ -185,9 +203,9 @@ export function normalizeAppearance(input: Partial<Record<keyof SmartPageAppeara
   };
 }
 
-export function appearanceContrastError(input: SmartPageAppearance): string | null {
+export function appearanceContrastError(input: SmartPageAppearance & { presentation_version?: unknown }): string | null {
   const resolved = resolveAppearance(input);
-  const preset = PRESETS[input.theme_preset];
+  const preset = presentationPresets(input)[input.theme_preset];
   const mainText = input.text_color ?? preset.textColor;
   const buttonText = input.button_text_color ??
     (resolved.buttonStyle === preset.buttonStyle ? preset.buttonTextColor : resolved.buttonTextColor);

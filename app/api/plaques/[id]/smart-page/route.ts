@@ -93,7 +93,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       button_text_color: button_text_color as string | null,
       button_style: button_style as "solid" | "outline" | "soft" | null,
       button_radius: button_radius as "rounded" | "pill" | "square" | null };
-    const contrastError = appearanceContrastError(appearance);
+    const contrastError = appearanceContrastError({ ...appearance, presentation_version: explicitV2 ? 2 : page.presentation_version });
     if (contrastError) return bad(contrastError);
     const { data, error } = await supabase.from("smart_pages")
       .update({ ...(explicitV2 ? normalizePresentation({ ...input, ...appearance }) : appearance), updated_at: new Date().toISOString() })

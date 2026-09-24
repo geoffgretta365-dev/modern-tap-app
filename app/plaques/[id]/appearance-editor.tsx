@@ -1,6 +1,7 @@
 "use client";
 
-import { appearanceContrastError, BUTTON_RADII, BUTTON_STYLES, PRESETS, THEME_PRESETS } from "@/lib/smart-page-appearance";
+import { appearanceContrastError, BUTTON_RADII, BUTTON_STYLES, presentationPresets, V2_PRESETS, THEME_PRESETS } from "@/lib/smart-page-appearance";
+import { SMART_PAGE_DESIGNS } from "@/lib/smart-page-designs";
 import { LEGACY_THEMES, resolvePresentation, type Presentation } from "@/lib/smart-page-presentation";
 
 const colors = [
@@ -9,15 +10,16 @@ const colors = [
   ["button_color", "Button", "buttonColor"],
   ["button_text_color", "Button text", "buttonTextColor"],
 ] as const;
-const descriptions: Record<string, string> = { bistro: "Warm dining", espresso: "Coffee & comfort", studio: "Beauty & care", motion: "Energy & performance", boutique: "Thoughtful retail", coastal: "Calm & welcoming" };
+
 export default function AppearanceEditor({ draft, onChange, onSave, onReset, saving, message }: {
   draft: Presentation; onChange: (patch: Partial<Presentation>) => void;
   onSave: () => void; onReset: () => void; saving: boolean; message: string;
 }) {
+  const presets = presentationPresets(draft);
   const resolved = resolvePresentation(draft);
   const contrastError = appearanceContrastError(draft);
   return <section className="mt-6 rounded-xl border border-[#dbe4ea] p-4 sm:p-5" aria-labelledby="appearance-title">
-    <h3 id="appearance-title" className="text-lg font-bold text-[#17324d]">Theme & Appearance</h3>
+    <h3 id="appearance-title" className="text-lg font-bold text-[#17324d]">Design</h3>
     <p className="mt-1 text-sm text-slate-500">Choose a starting point, then make it yours.</p>
     <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm">
       {draft.presentation_version === 1 ? <>
@@ -29,11 +31,13 @@ export default function AppearanceEditor({ draft, onChange, onSave, onReset, sav
       {THEME_PRESETS.map(theme => <button key={theme} type="button" aria-pressed={draft.theme_preset === theme}
         onClick={() => onChange({ theme_preset: theme, presentation_version: LEGACY_THEMES.includes(theme) ? draft.presentation_version : 2,
           background_color: null, text_color: null, button_color: null, button_text_color: null, button_style: null, button_radius: null,
+          content_alignment: draft.presentation_version === 2 || !LEGACY_THEMES.includes(theme) ? SMART_PAGE_DESIGNS[theme].alignment : null,
           page_background_color: null, gradient_end_color: null, background_mode: null, gradient_direction: null })}
         className={`rounded-xl border p-3 text-left ${draft.theme_preset === theme ? "border-[#0f766e] ring-1 ring-[#0f766e]" : "border-slate-200"}`}>
-        <span className="mb-2 flex gap-1" aria-hidden="true">{[PRESETS[theme].pageBackground, PRESETS[theme].surfaceBackground, PRESETS[theme].buttonColor].map((color,i) => <span key={i} className="h-5 w-5 rounded-full border border-black/10" style={{ backgroundColor: color }} />)}</span>
+        <span aria-hidden="true" className="mb-3 block rounded-md border p-3" style={{ backgroundColor: V2_PRESETS[theme].surfaceBackground, color: V2_PRESETS[theme].textColor, borderColor: V2_PRESETS[theme].borderColor }}><span className="block text-lg" style={{ fontFamily: SMART_PAGE_DESIGNS[theme].font }}>Your brand</span><span className="mt-2 block h-3 w-full" style={{ backgroundColor: V2_PRESETS[theme].buttonColor, borderRadius: V2_PRESETS[theme].buttonRadius === "pill" ? 20 : 3 }}/></span>
+        <span className="mb-2 flex gap-1" aria-hidden="true">{[presets[theme].pageBackground, presets[theme].surfaceBackground, presets[theme].buttonColor].map((color,i) => <span key={i} className="h-5 w-5 rounded-full border border-black/10" style={{ backgroundColor: color }} />)}</span>
         <span className="block text-sm font-semibold capitalize">{theme}</span>
-        <span className="mt-1 block text-xs text-slate-500">{descriptions[theme] ?? "Classic theme"}</span>
+        <span className="mt-1 block text-xs text-slate-500">{SMART_PAGE_DESIGNS[theme].description}</span>
       </button>)}
     </div>
     {draft.presentation_version === 2 && <fieldset className="mt-6 space-y-3">
@@ -47,7 +51,7 @@ export default function AppearanceEditor({ draft, onChange, onSave, onReset, sav
     </fieldset>}
     <div className="mt-6 grid gap-3 sm:grid-cols-2">{colors.map(([key,label,presetKey]) => <label key={key} className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
       {key === "background_color" && draft.presentation_version === 1 ? "Background" : label}
-      <input type="color" value={draft[key] ?? PRESETS[draft.theme_preset][presetKey]} onChange={e => onChange({ [key]: e.target.value })} />
+      <input type="color" value={draft[key] ?? presets[draft.theme_preset][presetKey]} onChange={e => onChange({ [key]: e.target.value })} />
     </label>)}</div>
     <div className="mt-5 grid gap-4 sm:grid-cols-2">
       <label className="text-sm">Button style<select className="mt-1 block w-full rounded border p-2 capitalize" value={resolved.buttonStyle} onChange={e => onChange({ button_style: e.target.value as Presentation["button_style"] })}>{BUTTON_STYLES.map(value => <option key={value}>{value}</option>)}</select></label>
