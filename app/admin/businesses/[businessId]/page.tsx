@@ -5,11 +5,14 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EditBusinessForm } from "./edit-forms";
+import { AddPilotPlaquesForm, PlaqueTapUrl, RefreshPilotActivity } from "./pilot-plaques";
+import { authOrigin } from "@/lib/auth-redirects";
 
 type Plaque = {
   id: string;
   name: string;
   code: string;
+  placement: string | null;
   destination_url: string | null;
   active: boolean;
   created_at: string;
@@ -122,7 +125,7 @@ export default async function AdminBusinessPage({
   const supabaseAdmin = createAdminClient();
   const { data: business, error: businessError } = await supabaseAdmin
     .from("businesses")
-    .select("id, name, created_at")
+    .select("id, name, created_at, is_pilot, trial_started_at, trial_ends_at, pilot_reviews_start, pilot_rating_start, pilot_notes")
     .eq("id", businessId)
     .maybeSingle();
 
@@ -141,7 +144,7 @@ export default async function AdminBusinessPage({
     loadAllRows<Plaque>((from, to) =>
       supabaseAdmin
         .from("plaques")
-        .select("id, name, code, destination_url, active, created_at")
+        .select("id, name, code, placement, destination_url, active, created_at")
         .eq("business_id", business.id)
         .order("created_at", { ascending: false })
         .range(from, to)
@@ -206,6 +209,7 @@ export default async function AdminBusinessPage({
     recentTaps = data ?? [];
   }
 
+  const tapOrigin = authOrigin();
   const status = subscription?.status;
   const statusClass =
     status === "active" || status === "trialing"
@@ -231,7 +235,7 @@ export default async function AdminBusinessPage({
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-              ModernTap Customer
+              {business.is_pilot ? "ModernTap Pilot" : "ModernTap Customer"}
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               {business.name}
@@ -281,6 +285,18 @@ export default async function AdminBusinessPage({
           <EditBusinessForm businessId={business.id} name={business.name} />
         </section>
 
+        {business.is_pilot && <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Pilot details</h2>
+          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
+            <div><dt className="text-slate-500">Trial dates</dt><dd className="mt-1 text-slate-900">{business.trial_started_at?.slice(0, 10) ?? "—"} → {business.trial_ends_at?.slice(0, 10) ?? "—"}</dd></div>
+            <div><dt className="text-slate-500">Starting Google reviews</dt><dd className="mt-1 text-slate-900">{business.pilot_reviews_start ?? "Not recorded"}</dd></div>
+            <div><dt className="text-slate-500">Starting star rating</dt><dd className="mt-1 text-slate-900">{business.pilot_rating_start ?? "Not recorded"}</dd></div>
+          </dl>
+          {business.pilot_notes && <p className="mt-4 whitespace-pre-wrap break-words text-sm text-slate-600">{business.pilot_notes}</p>}
+          <h3 className="mt-6 border-t border-slate-200 pt-5 text-lg font-semibold text-slate-900">Add plaques</h3>
+          <AddPilotPlaquesForm businessId={business.id} />
+        </section>}
+
         <section id="plaques" className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Plaques</h2>
           <p className="mt-1 text-sm text-slate-500">Every smart plaque connected to this business.</p>
@@ -293,7 +309,8 @@ export default async function AdminBusinessPage({
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900">{plaque.name}</p>
                     <p className="mt-1 break-all text-sm text-slate-500">{plaque.destination_url || "No destination set"}</p>
-                    <p className="mt-1 font-mono text-xs text-slate-400">/t/{plaque.code}</p>
+                    <p className="mt-1 text-xs capitalize text-slate-500">{plaque.placement ?? "Placement not set"}</p>
+                    <PlaqueTapUrl url={`${tapOrigin}/t/${encodeURIComponent(plaque.code)}`} />
                   </div>
                   <div className="flex flex-wrap items-center gap-4 text-sm md:justify-end">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${plaque.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
@@ -310,7 +327,10 @@ export default async function AdminBusinessPage({
         </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Analytics</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Analytics</h2>
+            {business.is_pilot && <RefreshPilotActivity />}
+          </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Total Taps</p>

@@ -1,5 +1,6 @@
 export const instant = false;
 
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -35,7 +36,6 @@ const replacementStatusStyle: Record<string, string> = {
 
 export default async function AdminPage() {
   const supabase = await createClient();
-  const supabaseAdmin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -53,6 +53,7 @@ export default async function AdminPage() {
     redirect("/dashboard");
   }
 
+  const supabaseAdmin = createAdminClient();
   const businesses: BusinessRow[] = [];
   const subscriptions: SubscriptionRow[] = [];
   const pageSize = 1000;
@@ -163,6 +164,8 @@ export default async function AdminPage() {
         <p className="mt-2 text-sm text-slate-600">
           Manage customers, subscriptions, support requests, design changes, and replacements.
         </p>
+
+        <Link href="/admin/pilots/new" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Create pilot restaurant</Link>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <OverviewCard title="Total Businesses" value={businesses.length} />
