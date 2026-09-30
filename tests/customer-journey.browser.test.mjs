@@ -16,12 +16,14 @@ test('tour story and shared designs stay local; activation polling stops and wai
     fs.writeFileSync(path.join(temp,'entry.tsx'),`
       import React from 'react'; import {createRoot} from 'react-dom/client';
       import Selector from '@/components/plans/plan-selector';
+      import AuthLayout from '@/app/auth/layout'; import {LoginForm} from '@/components/login-form'; import {SignUpForm} from '@/components/sign-up-form'; import {AppRouterContext} from 'next/dist/shared/lib/app-router-context.shared-runtime';
       import Tour from '@/components/tour/tour-shell'; import Activation from '@/app/billing/activation-status';
       const root=createRoot(document.getElementById('root')); root.render(<Tour/>);
       const originalTimer=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>originalTimer(fn,ms===2500?5:ms,...args);
       window.requests=[];window.confirmed=false;
       window.fetch=async(url)=>{window.requests.push(String(url));return {ok:true,json:async()=>({active:window.confirmed})};};
       window.showPlans=()=>root.render(<div style={{padding:16}}><Selector prices={{}}/></div>);
+      window.showAuth=(signup)=>root.render(<AppRouterContext.Provider value={{push(){},replace(){},refresh(){},prefetch(){},back(){},forward(){}}}><AuthLayout>{signup?<SignUpForm emailRedirectTo="https://example.test/auth/confirm?next=/onboarding"/>:<LoginForm/>}</AuthLayout></AppRouterContext.Provider>);
       window.startActivation=()=>root.render(<Activation initiallyActive={false}/>);
     `);
     await new Promise((resolve,reject)=>webpack({mode:'development',devtool:false,target:'web',entry:path.join(temp,'entry.tsx'),output:{path:temp,filename:'bundle.js'},resolve:{alias:{'@':root},extensions:['.tsx','.ts','.js'],modules:[path.join(root,'node_modules')]},module:{rules:[{test:/\.tsx?$/,exclude:/node_modules/,use:path.join(temp,'loader.cjs')}]},plugins:[new webpack.DefinePlugin({'process.env':JSON.stringify({NODE_ENV:'development'})})]},(error,stats)=>error||stats.hasErrors()?reject(error||new Error(stats.toString({all:false,errors:true}))):resolve()));
@@ -44,18 +46,18 @@ test('tour story and shared designs stay local; activation polling stops and wai
     await click('Tap the demo plaque');await wait("document.querySelector('[data-smart-page-design]')!==null");
     await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('View Our Menu')).click()");
     await wait("document.body.textContent.includes('No website opened or activity recorded')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Change where your plaques lead anytime.'");
+    await click('Continue →');await wait("document.querySelector('h1')?.textContent==='Change where your plaques lead anytime.'");
     await evaluate(`{const sel=document.querySelector('select[aria-label="Demo destination"]');sel.value='Seasonal menu';sel.dispatchEvent(new Event('change',{bubbles:true}));}`);
     await wait("document.body.textContent.includes('Demo destination updated')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='See how customers interact.'");
+    await click('Continue →');await wait("document.querySelector('h1')?.textContent==='See how customers interact.'");
     await click('Last 14 Days');await wait("document.body.textContent.includes('560')");
     await click('Last 7 Days');await wait("document.body.textContent.includes('280')");
-    await click('Next →');await wait("document.querySelector('h1')?.textContent==='Make every tap feel like your brand.'");
+    await click('Continue →');await wait("document.querySelector('h1')?.textContent==='Make every tap feel like your brand.'");
     for(const theme of ['espresso','studio','boutique','coastal','modern','bold','bistro']){
       await evaluate(`{const el=document.querySelector('select[aria-label="Demo design"]');el.value=${JSON.stringify(theme)};el.dispatchEvent(new Event('change',{bubbles:true}));}`);
       await wait(`document.querySelector('[data-smart-page-design]')?.dataset.smartPageDesign===${JSON.stringify(theme)}`);
       assert.ok(await evaluate("parseFloat(getComputedStyle(document.querySelector('[data-smart-page-design] h1')).fontSize)>=30"), theme+' heading typography');
-      for(const width of [320,390,412,1280]){
+      for(const width of [320,390,412,768,1280,1440]){
         await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<500},sessionId);
         assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth'),true,theme+' width '+width);
         if(process.env.MODERNTAP_SCREENSHOT_DIR && width===390 && ['bistro','espresso'].includes(theme)){fs.mkdirSync(process.env.MODERNTAP_SCREENSHOT_DIR,{recursive:true});const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:true},sessionId);fs.writeFileSync(path.join(process.env.MODERNTAP_SCREENSHOT_DIR,theme+'.png'),Buffer.from(shot.data,'base64'));}
@@ -81,6 +83,14 @@ test('tour story and shared designs stay local; activation polling stops and wai
       assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth'),true);
       assert.equal(await evaluate("document.querySelectorAll('a[href^=\"/plans/\"]').length"),4);
       assert.equal(await evaluate("document.querySelector('a[href*=custom]')===null"),true);
+    }
+    for(const signup of [false,true]){
+      await evaluate(`window.showAuth(${signup})`);await wait("document.body.textContent.includes('Business Portal')");
+      for(const width of [320,390,768,1440]){
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<500},sessionId);
+        assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth'),true);
+        assert.equal(await evaluate("document.querySelectorAll('img[alt=ModernTap]').length"),1);
+      }
     }
     assert.deepEqual(errors,[]);await call('Browser.close');
   } finally {

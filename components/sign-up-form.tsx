@@ -16,9 +16,10 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 export function SignUpForm({
+  emailRedirectTo,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div"> & { emailRedirectTo: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -44,11 +45,11 @@ export function SignUpForm({
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
+          emailRedirectTo: emailRedirectTo,
         },
       });
       if (error) {
@@ -63,7 +64,8 @@ export function SignUpForm({
                 : "We couldn't create your account. Please try again.");
         return;
       }
-      router.push("/auth/sign-up-success");
+      router.replace(data.session ? "/onboarding" : "/auth/sign-up-success");
+      router.refresh();
     } catch {
       setError("We couldn't create your account. Please try again.");
     } finally {
