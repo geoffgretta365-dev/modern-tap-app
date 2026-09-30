@@ -1,3 +1,5 @@
+import { easternMidnightUtc, shiftDay } from "@/lib/format-eastern-time";
+
 export const placements = ["table", "checkbook", "register", "other"] as const;
 
 function record(value: unknown): Record<string, unknown> {
@@ -41,8 +43,8 @@ export function pilotInput(value: unknown) {
   }
   return {
     name: businessName, owner_id: null, is_pilot: true,
-    trial_started_at: start.toISOString(),
-    trial_ends_at: new Date(start.getTime() + input.days * 86400000).toISOString(),
+    trial_started_at: easternMidnightUtc(input.startDate).toISOString(),
+    trial_ends_at: easternMidnightUtc(shiftDay(input.startDate, input.days)).toISOString(),
     pilot_reviews_start: reviews, pilot_rating_start: rating,
     pilot_notes: typeof input.notes === "string" ? input.notes.trim() || null : null,
   };

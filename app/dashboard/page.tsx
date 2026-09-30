@@ -1,5 +1,7 @@
 export const instant = false;
 
+import { cleanTapEvents } from "@/lib/clean-tap-events";
+
 import Link from "next/link";
 import AppShell from "@/app/components/app-shell";
 import { requireSubscription } from "@/lib/require-subscription";
@@ -15,18 +17,19 @@ export default async function DashboardPage() {
 
   const plaqueIds = plaques?.map((plaque) => plaque.id) ?? [];
 
-  let tapEvents: {
+  const tapEvents: {
     plaque_id: string;
     created_at: string;
   }[] = [];
 
   if (plaqueIds.length > 0) {
-    const { data } = await supabase
-      .from("tap_events")
-      .select("plaque_id, created_at")
-      .in("plaque_id", plaqueIds);
-
-    tapEvents = data ?? [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await cleanTapEvents(supabase)
+        .in("plaque_id", plaqueIds).order("id").range(offset, offset + 999);
+      if (error) throw error;
+      tapEvents.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
   }
 
   const now = new Date();
@@ -71,8 +74,7 @@ export default async function DashboardPage() {
   const reviewMonthStart = easternMidnightUtc(shiftDay(easternDayKey(now), -29));
   let reviewPageVisits = 0;
   if (reviewIds.length) {
-    const { count, error } = await supabase.from("tap_events")
-      .select("id", { count: "exact", head: true }).in("plaque_id", reviewIds)
+    const { count, error } = await cleanTapEvents(supabase, { count: "exact", head: true }).in("plaque_id", reviewIds)
       .gte("created_at", reviewMonthStart.toISOString()).lte("created_at", now.toISOString());
     if (error) throw error;
     reviewPageVisits = count ?? 0;
@@ -81,8 +83,7 @@ export default async function DashboardPage() {
   const names = new Map((plaques ?? []).map((plaque) => [plaque.id, plaque.name]));
   const reviewSet = new Set(reviewIds);
   const { data: recentTaps, error: recentTapsError } = plaqueIds.length
-    ? await supabase.from("tap_events")
-        .select("plaque_id, created_at").in("plaque_id", plaqueIds)
+    ? await cleanTapEvents(supabase).in("plaque_id", plaqueIds)
         .order("created_at", { ascending: false }).limit(8)
     : { data: [], error: null };
   if (recentTapsError) throw recentTapsError;

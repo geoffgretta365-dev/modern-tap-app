@@ -1,11 +1,15 @@
 export const instant = false;
 
+import { cleanTapEvents } from "@/lib/clean-tap-events";
+
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EditBusinessForm } from "./edit-forms";
 import { AddPilotPlaquesForm, PlaqueTapUrl, RefreshPilotActivity } from "./pilot-plaques";
+import { PilotShareControls } from "@/components/pilots/admin-result-controls";
+import { formatEasternDate } from "@/lib/format-eastern-time";
 import { authOrigin } from "@/lib/auth-redirects";
 
 type Plaque = {
@@ -125,7 +129,7 @@ export default async function AdminBusinessPage({
   const supabaseAdmin = createAdminClient();
   const { data: business, error: businessError } = await supabaseAdmin
     .from("businesses")
-    .select("id, name, created_at, is_pilot, trial_started_at, trial_ends_at, pilot_reviews_start, pilot_rating_start, pilot_notes")
+    .select("id, name, created_at, is_pilot, trial_started_at, trial_ends_at, pilot_reviews_start, pilot_rating_start, pilot_notes, pilot_share_token")
     .eq("id", businessId)
     .maybeSingle();
 
@@ -172,9 +176,7 @@ export default async function AdminBusinessPage({
   const tapCounts = new Map(
     await Promise.all(
       plaques.map(async (plaque) => {
-        const { count, error } = await supabaseAdmin
-          .from("tap_events")
-          .select("id", { count: "exact", head: true })
+        const { count, error } = await cleanTapEvents(supabaseAdmin, { count: "exact", head: true })
           .eq("plaque_id", plaque.id);
         if (error) throw error;
         return [plaque.id, count ?? 0] as const;
@@ -190,14 +192,10 @@ export default async function AdminBusinessPage({
   if (plaqueIds.length > 0) {
     const [{ count, error: countError }, { data, error: recentError }] =
       await Promise.all([
-        supabaseAdmin
-          .from("tap_events")
-          .select("id", { count: "exact", head: true })
+        cleanTapEvents(supabaseAdmin, { count: "exact", head: true })
           .in("plaque_id", plaqueIds)
           .gte("created_at", sevenDaysAgo),
-        supabaseAdmin
-          .from("tap_events")
-          .select("plaque_id, created_at")
+        cleanTapEvents(supabaseAdmin)
           .in("plaque_id", plaqueIds)
           .order("created_at", { ascending: false })
           .limit(8),
@@ -287,8 +285,10 @@ export default async function AdminBusinessPage({
 
         {business.is_pilot && <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Pilot details</h2>
+          <Link href={`/admin/pilots/${business.id}/results`} className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">View pilot results</Link>
+          <PilotShareControls businessId={business.id} initialUrl={business.pilot_share_token ? `${tapOrigin}/r/${business.pilot_share_token}` : null} />
           <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
-            <div><dt className="text-slate-500">Trial dates</dt><dd className="mt-1 text-slate-900">{business.trial_started_at?.slice(0, 10) ?? "—"} → {business.trial_ends_at?.slice(0, 10) ?? "—"}</dd></div>
+            <div><dt className="text-slate-500">Trial dates</dt><dd className="mt-1 text-slate-900">{business.trial_started_at ? formatEasternDate(business.trial_started_at) : "—"} → {business.trial_ends_at ? formatEasternDate(business.trial_ends_at) : "—"}</dd></div>
             <div><dt className="text-slate-500">Starting Google reviews</dt><dd className="mt-1 text-slate-900">{business.pilot_reviews_start ?? "Not recorded"}</dd></div>
             <div><dt className="text-slate-500">Starting star rating</dt><dd className="mt-1 text-slate-900">{business.pilot_rating_start ?? "Not recorded"}</dd></div>
           </dl>

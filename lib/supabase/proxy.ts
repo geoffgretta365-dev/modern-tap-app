@@ -1,8 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { publicPilotAvailable } from "@/lib/pilot-results-server";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
+  // Bearer links are validated by the server page, independently of login state.
+  if (request.nextUrl.pathname.startsWith("/r/")) {
+    let response: NextResponse;
+    try {
+      response = await publicPilotAvailable(request.nextUrl.pathname.slice(3))
+        ? NextResponse.next({ request })
+        : new NextResponse("Page not found.", { status: 404 });
+    } catch {
+      response = new NextResponse("Results temporarily unavailable.", { status: 503 });
+    }
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    response.headers.set("Referrer-Policy", "no-referrer");
+    return response;
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });

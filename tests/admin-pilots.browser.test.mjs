@@ -28,7 +28,8 @@ test('admin pilot forms, copy feedback and responsive page layouts', { skip: !fs
       import {AppRouterContext} from 'next/dist/shared/lib/app-router-context.shared-runtime';
       import {NewPilotForm} from '@/app/admin/pilots/new/pilot-form';
       import {AddPilotPlaquesForm,PlaqueTapUrl,RefreshPilotActivity} from '@/app/admin/businesses/[businessId]/pilot-plaques';
-      const components={NewPilotForm,AddPilotPlaquesForm,PlaqueTapUrl,RefreshPilotActivity};
+      import {PilotShareControls} from '@/components/pilots/admin-result-controls';
+      const components={NewPilotForm,AddPilotPlaquesForm,PlaqueTapUrl,RefreshPilotActivity,PilotShareControls};
       window.requests=[];window.routes=[];window.refreshes=0;window.fail=false;window.copyFail=false;
       Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{if(window.copyFail)throw Error('Unavailable');window.copied=text;}}});
       window.fetch=async(url,init)=>{window.requests.push({url,body:JSON.parse(init.body)});await new Promise(r=>setTimeout(r,40));return {ok:!window.fail,json:async()=>window.fail?{error:'Fixture save failed.'}:url==='/api/admin/pilots'?{id:${JSON.stringify(businessId)}}:{plaques:Array(JSON.parse(init.body).quantity).fill({})}};};

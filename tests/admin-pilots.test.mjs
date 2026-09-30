@@ -25,7 +25,7 @@ test('missing allowlist fails closed', async () => {
 test('creates ownerless 30-day business without subscription writes', async () => {
   const h = pilotHarness(); assert.equal((await h.load(pilotRoute).POST(request(pilot))).status, 201);
   assert.equal(h.state.business.owner_id, null); assert.equal(h.state.business.is_pilot, true);
-  assert.equal(h.state.business.trial_ends_at, '2026-10-29T00:00:00.000Z');
+  assert.equal(h.state.business.trial_ends_at, '2026-10-29T04:00:00.000Z');
   assert.equal(h.state.business.pilot_reviews_start, 125); assert.equal(h.state.business.pilot_rating_start, 4.5);
   assert.ok(h.calls.every(c => c.table === 'businesses'));
 });

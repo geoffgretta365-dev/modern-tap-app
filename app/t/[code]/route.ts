@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isBotTap } from "@/lib/tap-classification";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function safeHttpUrl(value: string | null): string | null {
@@ -37,10 +38,12 @@ export async function GET(
     return new NextResponse("Plaque not found", { status: 404 });
   }
 
+  // The database marks repeats atomically, including concurrent requests.
   // Record this tap
   const { error: tapError } = await supabase.from("tap_events").insert({
     plaque_id: plaque.id,
     user_agent: request.headers.get("user-agent"),
+    is_bot: isBotTap(request.headers.get("user-agent"), request.method),
   });
   if (tapError) {
     console.error("Public plaque tap insert failed", { code: tapError.code });
@@ -60,3 +63,6 @@ export async function GET(
   // Direct Link plaques retain their existing redirect behavior.
   return NextResponse.redirect(destination);
 }
+
+// Explicit HEAD handling ensures link checks are recorded as bots, then redirected.
+export const HEAD = GET;

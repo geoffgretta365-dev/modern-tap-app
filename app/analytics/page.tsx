@@ -1,5 +1,7 @@
 export const instant = false;
 
+import { cleanTapEvents } from "@/lib/clean-tap-events";
+
 import Link from "next/link";
 import AppShell from "@/app/components/app-shell";
 import { requireSubscription } from "@/lib/require-subscription";
@@ -75,8 +77,7 @@ export default async function AnalyticsPage({ searchParams }: {
   if (ids.length) {
     // Aggregate all-time counts page by page; retain only the plaque IDs.
     for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await supabase.from("tap_events")
-        .select("plaque_id").in("plaque_id", ids)
+      const { data, error } = await cleanTapEvents(supabase).in("plaque_id", ids)
         .order("id").range(offset, offset + PAGE_SIZE - 1);
       if (error) throw error;
       for (const tap of data ?? []) {
@@ -88,8 +89,7 @@ export default async function AnalyticsPage({ searchParams }: {
 
     // Only the chosen period and its immediately preceding period need timestamps.
     for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await supabase.from("tap_events")
-        .select("plaque_id, created_at").in("plaque_id", ids)
+      const { data, error } = await cleanTapEvents(supabase).in("plaque_id", ids)
         .gte("created_at", previousStart.toISOString())
         .lte("created_at", now.toISOString())
         .order("created_at").order("id").range(offset, offset + PAGE_SIZE - 1);
@@ -108,8 +108,7 @@ export default async function AnalyticsPage({ searchParams }: {
     }
 
     const countSince = async (start: Date) => {
-      const { count, error } = await supabase.from("tap_events")
-        .select("id", { count: "exact", head: true }).in("plaque_id", ids)
+      const { count, error } = await cleanTapEvents(supabase, { count: "exact", head: true }).in("plaque_id", ids)
         .gte("created_at", start.toISOString()).lte("created_at", now.toISOString());
       if (error) throw error;
       return count ?? 0;
@@ -121,8 +120,7 @@ export default async function AnalyticsPage({ searchParams }: {
     ]);
     if (reviewIds.length) {
       const countReviewSince = async (start: Date) => {
-        const { count, error } = await supabase.from("tap_events")
-          .select("id", { count: "exact", head: true }).in("plaque_id", reviewIds)
+        const { count, error } = await cleanTapEvents(supabase, { count: "exact", head: true }).in("plaque_id", reviewIds)
           .gte("created_at", start.toISOString()).lte("created_at", now.toISOString());
         if (error) throw error;
         return count ?? 0;
@@ -133,8 +131,7 @@ export default async function AnalyticsPage({ searchParams }: {
         countReviewSince(easternMidnightUtc(shiftDay(todayKey, -29))),
       ]);
     }
-    const { data, error } = await supabase.from("tap_events")
-      .select("plaque_id, created_at").in("plaque_id", ids)
+    const { data, error } = await cleanTapEvents(supabase).in("plaque_id", ids)
       .order("created_at", { ascending: false }).limit(8);
     if (error) throw error;
     recent = data ?? [];

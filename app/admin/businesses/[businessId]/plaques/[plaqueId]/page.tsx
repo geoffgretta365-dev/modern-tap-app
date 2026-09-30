@@ -1,5 +1,7 @@
 export const instant = false;
 
+import { cleanTapEvents } from "@/lib/clean-tap-events";
+
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -33,8 +35,7 @@ export default async function AdminPlaquePage({
   if (plaqueError) throw plaqueError;
   if (!plaque) notFound();
 
-  const { count, error: tapsError } = await admin
-    .from("tap_events").select("id", { count: "exact", head: true })
+  const { count, error: tapsError } = await cleanTapEvents(admin, { count: "exact", head: true })
     .eq("plaque_id", plaque.id);
   if (tapsError) throw tapsError;
 
